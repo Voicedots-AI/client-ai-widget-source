@@ -2,30 +2,27 @@ import { Mic, MicOff, Square, LucideMinimize2 } from "lucide-preact";
 import { useRef, useEffect, useState } from "preact/hooks";
 import AnimationController from "../features/AnimationController";
 import type { AvatarHandle } from "../features/AnimationController";
-import { useConversationController } from "../features/conversationController";
 import { useVoicedotsConversationController } from "../features/voicedotsConversationController";
 import { useGeminiConversationController } from "../features/geminiConversationController";
 import DataCollectionModal from "../modals/DataCollectionModal";
 import VoicedotsDataCollectionModal from "../modals/VoicedotsDataCollectionModal";
 import StudentRecordModal from "../modals/StudentRecordModal";
-import type { Avatar } from "../features/conversationController";
+import type { Avatar } from "../features/types";
 
 
 export default function AITeamWidget({ title, agentId, avatars, logo, pos, mini, msg, pipeline, wsUrl }: { title: string, agentId: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, msg: string, pipeline?: string, wsUrl?: string }) {
   const [minimized, setMinimized] = useState(mini);
   let tag = "default";
   let conversation;
-  // "sarvam" is a legacy alias kept only so older client embeds keep working.
+  // "websocket" and "sarvam" are legacy aliases kept so older embeds keep working;
+  // all of them run the Gemini Live pipeline.
   if (pipeline === "gemini" || pipeline === "websocket" || pipeline === "sarvam") {
-    // Sarvam WebSocket pipeline (multi-tenant): same tool protocol and modals
-    // as the voicedots LiveKit path, different transport.
     conversation = useGeminiConversationController(wsUrl);
     tag = "voicedots";
-  } else if (agentId.includes("voicedots") || agentId === "agent_6401kktn9d03fncsk4j27psd9gtk") {
+  } else {
+    // LiveKit path, for clients not yet on the WebSocket pipeline.
     conversation = useVoicedotsConversationController();
     tag = "voicedots";
-  } else {
-    conversation = useConversationController();
   }
   const studentConversation = conversation as any;
 

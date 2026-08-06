@@ -24,8 +24,8 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@elevenlabs/react": "^0.14.2",
     "@lottiefiles/dotlottie-react": "^0.18.4",
+    "livekit-client": "^2.17.2",
     "lucide-preact": "^0.577.0",
     "preact": "^10.27.2",
     "preact-custom-element": "^4.6.0",
