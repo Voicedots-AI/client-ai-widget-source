@@ -68,12 +68,18 @@ def load_config(name: str) -> dict:
 
 
 def embed_snippet(config: dict) -> str:
-    """The two tags the client pastes into their page."""
+    """The two tags the client pastes into their page.
+
+    The config is pretty-printed and indented so their developer can read and
+    edit it. Newlines are legal inside an HTML attribute value.
+    """
     tag = config.get("tagName") or "voicedots-ai"
     # Single quotes wrap the attribute, so the JSON must not contain any.
-    payload = json.dumps(config["embed"], separators=(",", ":")).replace("'", "&#39;")
+    payload = json.dumps(config["embed"], indent=2).replace("'", "&#39;")
+    payload = "\n".join("  " + line for line in payload.splitlines()).lstrip()
     src = f"{CDN}/builds/{config['client']}/widget.js"
     return (
+        f"<!-- {config.get('displayName', config['client'])} — Voicedots AI widget -->\n"
         f"<{tag} config='{payload}'></{tag}>\n"
         f'<script type="module" src="{src}"></script>\n'
     )

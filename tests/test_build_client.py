@@ -102,8 +102,9 @@ def test_snippet_points_at_main_not_a_version_tag(repo):
 def test_snippet_uses_custom_tag_name(repo):
     config = write_config(repo, "acme", tagName="acme-ai")
     snippet = bc.embed_snippet(config)
-    assert snippet.startswith("<acme-ai config=")
+    assert "<acme-ai config=" in snippet
     assert "</acme-ai>" in snippet
+    assert "voicedots-ai" not in snippet
 
 
 def test_snippet_escapes_single_quotes_in_config(repo):
@@ -165,3 +166,13 @@ def test_one_client_build_does_not_touch_another(repo):
 def test_cli_reports_unknown_client(repo, capsys):
     assert bc.main(["ghost"]) == 1
     assert "error:" in capsys.readouterr().err
+
+
+def test_snippet_is_readable_multiline(repo):
+    config = write_config(repo, "acme")
+    snippet = bc.embed_snippet(config)
+    assert snippet.count("\n") > 5, "config should be pretty-printed, not one long line"
+    assert snippet.startswith("<!-- "), "should carry a comment naming the client"
+    # Still one attribute: the JSON must remain inside a single pair of quotes.
+    assert snippet.count("config='") == 1
+    assert snippet.count("'></") == 1
