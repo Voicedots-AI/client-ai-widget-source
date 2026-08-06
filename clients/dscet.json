@@ -1,0 +1,35 @@
+{
+  "client": "dscet",
+  "displayName": "Dhanalakshmi AI Team",
+  "tagName": "voicedots-ai",
+  "migratedFromLegacy": true,
+  "embed": {
+    "title": "Dhanalakshmi AI Team",
+    "pipeline": "gemini",
+    "agentId": "voicedots_agent_dscet9m2q1h8z5t6w3v0pajcylrbsfde",
+    "themeColor": "#9966FE",
+    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "avatars": [
+      {
+        "name": "about",
+        "role": "About Us",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/sales.lottie"
+      },
+      {
+        "name": "courses",
+        "role": "Courses",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/support.lottie"
+      },
+      {
+        "name": "admission",
+        "role": "Admissions",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/ceo.lottie"
+      },
+      {
+        "name": "placement",
+        "role": "Placements",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/loan.lottie"
+      }
+    ]
+  }
+}

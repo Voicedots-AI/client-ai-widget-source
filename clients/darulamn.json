@@ -1,0 +1,35 @@
+{
+  "client": "darulamn",
+  "displayName": "Dar-ul-Amn School AI Team",
+  "tagName": "voicedots-ai",
+  "migratedFromLegacy": true,
+  "embed": {
+    "title": "Dar-ul-Amn School AI Team",
+    "pipeline": "gemini",
+    "agentId": "voicedots_agent_dl_p1ydukdywkyl0ocz7weggm2d",
+    "themeColor": "#2e7d32",
+    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "avatars": [
+      {
+        "name": "about",
+        "role": "About",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/sales.lottie"
+      },
+      {
+        "name": "academics",
+        "role": "Academics",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/support.lottie"
+      },
+      {
+        "name": "admissions",
+        "role": "Admissions",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/receptionist.lottie"
+      },
+      {
+        "name": "campus",
+        "role": "Campus",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/srk.lottie"
+      }
+    ]
+  }
+}

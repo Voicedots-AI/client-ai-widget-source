@@ -1,0 +1,35 @@
+{
+  "client": "chitkara",
+  "displayName": "Chitkara University AI Team",
+  "tagName": "voicedots-ai",
+  "migratedFromLegacy": true,
+  "embed": {
+    "title": "Chitkara University AI Team",
+    "pipeline": "gemini",
+    "agentId": "voicedots_agent_0hzqiz5dnqgtpf0siz8y4soasg4hyoi7",
+    "themeColor": "#9966FE",
+    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "avatars": [
+      {
+        "name": "about_us",
+        "role": "About",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/sales.lottie"
+      },
+      {
+        "name": "ug_courses",
+        "role": "UG Guide",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/ug_guide.lottie"
+      },
+      {
+        "name": "pg_courses",
+        "role": "PG Guide",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/pg_guide.lottie"
+      },
+      {
+        "name": "support_us",
+        "role": "Support",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/srk.lottie"
+      }
+    ]
+  }
+}

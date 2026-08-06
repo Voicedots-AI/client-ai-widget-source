@@ -1,0 +1,20 @@
+{
+  "client": "sreebalaji",
+  "displayName": "Sree Balaji Medical AI Team",
+  "tagName": "voicedots-ai",
+  "migratedFromLegacy": true,
+  "embed": {
+    "title": "Sree Balaji Medical AI Team",
+    "pipeline": "gemini",
+    "agentId": "voicedots_agent_j7s2m9q4v1x8z6k5a3d0r2p9w4b7c",
+    "themeColor": "#9966FE",
+    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "avatars": [
+      {
+        "name": "admissions_officer",
+        "role": "Admissions Officer",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/ug_guide.lottie"
+      }
+    ]
+  }
+}

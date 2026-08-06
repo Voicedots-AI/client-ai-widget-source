@@ -1,0 +1,35 @@
+{
+  "client": "ramachandra",
+  "displayName": "Sri Ramachandra AI Team",
+  "tagName": "voicedots-ai",
+  "migratedFromLegacy": true,
+  "embed": {
+    "title": "Sri Ramachandra AI Team",
+    "pipeline": "gemini",
+    "agentId": "voicedots_agent_ru_8k3m1z7pl5q2t9v4y0x6wsn",
+    "themeColor": "#9966FE",
+    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "avatars": [
+      {
+        "name": "about_us",
+        "role": "About Us",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/sales.lottie"
+      },
+      {
+        "name": "courses",
+        "role": "Courses",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/general.lottie"
+      },
+      {
+        "name": "admissions",
+        "role": "Admissions",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/srk.lottie"
+      },
+      {
+        "name": "placements",
+        "role": "Placements",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/cto.lottie"
+      }
+    ]
+  }
+}
