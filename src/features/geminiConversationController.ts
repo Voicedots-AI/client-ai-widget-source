@@ -98,7 +98,7 @@ const workletUrl = () => URL.createObjectURL(new Blob([WORKLET_SRC], { type: "ap
 
 type Avatar = { name: string; role?: string; image?: string };
 
-export function useSarvamConversationController(wsBaseUrl?: string) {
+export function useGeminiConversationController(wsBaseUrl?: string) {
     const [micMuted, setMicMuted] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);

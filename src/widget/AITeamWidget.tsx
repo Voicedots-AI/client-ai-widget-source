@@ -4,7 +4,7 @@ import AnimationController from "../features/AnimationController";
 import type { AvatarHandle } from "../features/AnimationController";
 import { useConversationController } from "../features/conversationController";
 import { useVoicedotsConversationController } from "../features/voicedotsConversationController";
-import { useSarvamConversationController } from "../features/sarvamConversationController";
+import { useGeminiConversationController } from "../features/geminiConversationController";
 import DataCollectionModal from "../modals/DataCollectionModal";
 import VoicedotsDataCollectionModal from "../modals/VoicedotsDataCollectionModal";
 import StudentRecordModal from "../modals/StudentRecordModal";
@@ -15,10 +15,11 @@ export default function AITeamWidget({ title, agentId, avatars, logo, pos, mini,
   const [minimized, setMinimized] = useState(mini);
   let tag = "default";
   let conversation;
+  // "sarvam" is a legacy alias kept only so older client embeds keep working.
   if (pipeline === "gemini" || pipeline === "websocket" || pipeline === "sarvam") {
     // Sarvam WebSocket pipeline (multi-tenant): same tool protocol and modals
     // as the voicedots LiveKit path, different transport.
-    conversation = useSarvamConversationController(wsUrl);
+    conversation = useGeminiConversationController(wsUrl);
     tag = "voicedots";
   } else if (agentId.includes("voicedots") || agentId === "agent_6401kktn9d03fncsk4j27psd9gtk") {
     conversation = useVoicedotsConversationController();
