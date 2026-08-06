@@ -1,0 +1,22 @@
+{
+  "client": "_template",
+  "displayName": "Client AI Team",
+  "tagName": "voicedots-ai",
+  "notes": "Copy this file to clients/<client>.json. 'client' must match the filename.",
+
+  "embed": {
+    "title": "Client AI Team",
+    "pipeline": "gemini",
+    "agentId": "voicedots_agent_REPLACE_ME",
+    "themeColor": "#9966FE",
+    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "pos": "right",
+    "avatars": [
+      {
+        "name": "about",
+        "role": "About Us",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/sales.lottie"
+      }
+    ]
+  }
+}

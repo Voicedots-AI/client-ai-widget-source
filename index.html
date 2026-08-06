@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoiceDots Widget Test</title>
+</head>
+
+<body>
+  <div style="padding: 50px; font-family: sans-serif;">
+    <h1>Test Website</h1>
+    <p>This is how your widget will look on a customer's page.</p>
+  </div>
+
+  <voicedots-ai config='{
+        "title": "SACAS AI Team",
+        "agentId": "voicedots_agent_8kqz4m2h1n9d7x5t3w0v6pajcylrbsfe",
+        "themeColor": "#9966FE",
+        "logo": "https://cdn.jsdelivr.net/gh/pratikix/animations/voicedotslogo.svg",
+        "pos": "right",
+        "widgetWidth": "300px",
+        "minimized": false,
+        "pillMessage": "",
+        "avatars": [
+          {
+            "name": "About Us",
+            "role": "About Us",
+            "avatar": "https://cdn.jsdelivr.net/gh/pratikix/animations/sales.lottie"
+          },
+          {
+            "name": "Placement",
+            "role": "Placement",
+            "avatar": "https://cdn.jsdelivr.net/gh/pratikix/animations/srk_avatar.lottie"
+          },
+          {
+            "name": "UG Programs",
+            "role": "UG Programs",
+            "avatar": "https://cdn.jsdelivr.net/gh/pratikix/animations/cto.lottie"
+          },
+          {
+            "name": "PG Programs",
+            "role": "PG Programs",
+            "avatar": "https://cdn.jsdelivr.net/gh/pratikix/animations/pg_guide.lottie"
+          }
+        ]
+      }'>
+    </voicedots-ai>
+  <script type="module" src="/src/web-component/index.ts"></script>
+</body>
+
+</html>

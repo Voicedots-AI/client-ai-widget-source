@@ -1,0 +1,354 @@
+.vd-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10001 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  pointer-events: auto !important;
+}
+
+.vd-modal-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Container */
+.vd-modal-container {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 448px !important;
+  max-height: 85vh !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 25px 50px -12px rgba(124, 77, 255, 0.25) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Top Glow */
+.vd-modal-glow {
+  position: absolute !important;
+  top: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 120px !important;
+  height: 2px !important;
+  background: rgba(124, 77, 255, 0.5) !important;
+  filter: blur(4px) !important;
+}
+
+/* Header */
+.vd-modal-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 20px 24px !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1) !important;
+}
+
+.vd-modal-title-box {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.vd-modal-icon-wrapper {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: rgba(124, 77, 255, 0.1) !important;
+  color: #7c4dff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.4s ease !important;
+}
+
+.vd-modal-title-box h3 {
+  margin: 0 !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #1a1a1a !important;
+}
+
+/* Close button */
+.vd-modal-close {
+  background: transparent !important;
+  border: none !important;
+  color: #666 !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+.vd-modal-close:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #1a1a1a !important;
+  transform: rotate(90deg) !important;
+}
+
+/* Body */
+.vd-modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 24px !important;
+}
+
+/* Loader */
+.vd-modal-loader {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  height: 160px !important;
+}
+
+.vd-modal-loader p {
+  font-size: 13px !important;
+  color: #666 !important;
+}
+
+/* Field list */
+.vd-form-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+/* Field box */
+.vd-field {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  background: rgba(124, 77, 255, 0.05) !important;
+  border: 1px solid transparent !important;
+  transition: all 0.4s ease !important;
+}
+
+/* Highlight when updated */
+.vd-field-updated {
+  background: rgba(124, 77, 255, 0.15) !important;
+  border: 1px solid rgba(124, 77, 255, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.15) !important;
+}
+
+/* Labels */
+.vd-field label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #7c4dff !important;
+}
+
+/* Value text */
+.vd-value-text {
+  font-size: 14px !important;
+  color: #1a1a1a !important;
+  min-height: 20px !important;
+  font-weight: 500 !important;
+}
+
+/* Empty state */
+.vd-value-empty {
+  opacity: 0.5 !important;
+  font-style: italic !important;
+}
+
+/* Footer */
+.vd-modal-footer {
+  padding: 18px 24px !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Footer status */
+.vd-verify-badge {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #666 !important;
+  transition: all 0.4s ease !important;
+}
+
+/* Success state */
+.vd-verify-success {
+  color: #10b981 !important;
+}
+
+/* ---------- Editable lead-collection form ---------- */
+.vd-modal-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.vd-input-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  background: rgba(124, 77, 255, 0.05) !important;
+  border: 1px solid transparent !important;
+  transition: all 0.3s ease !important;
+}
+
+.vd-input-group:focus-within {
+  border-color: rgba(124, 77, 255, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.12) !important;
+}
+
+.vd-input-group label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #7c4dff !important;
+}
+
+.vd-input-field {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  padding: 2px 0 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #1a1a1a !important;
+  font-family: inherit !important;
+}
+
+.vd-input-field::placeholder {
+  color: #999 !important;
+}
+
+/* Form footer: badge left, buttons right */
+.vd-modal-form .vd-modal-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 4px 0 0 0 !important;
+  border-top: none !important;
+}
+
+.vd-footer-btns {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.vd-btn-ghost {
+  background: transparent !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  color: #666 !important;
+  border-radius: 10px !important;
+  padding: 9px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  transition: all 0.2s ease !important;
+}
+
+.vd-btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #1a1a1a !important;
+}
+
+.vd-btn-save {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #7c4dff !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  padding: 9px 18px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  box-shadow: 0 4px 14px rgba(124, 77, 255, 0.35) !important;
+  transition: all 0.2s ease !important;
+}
+
+.vd-btn-save:hover {
+  background: #6a3df0 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Animations */
+@keyframes vd-zoom-in {
+  from {
+    opacity: 0 !important;
+    transform: scale(0.95) !important;
+  }
+  to {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+}
+
+.animate-zoom-in {
+  animation: vd-zoom-in 0.2s ease-out !important;
+}
+
+/* Spin animation */
+.vd-spin {
+  animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg) !important;
+  }
+  to {
+    transform: rotate(360deg) !important;
+  }
+}
+
+/* Pulse animation (for waiting state) */
+.vd-pulse {
+  animation: vd-pulse 1.2s ease-in-out infinite !important;
+}
+
+@keyframes vd-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(124, 77, 255, 0.4);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}

@@ -1,0 +1,44 @@
+{
+  "name": "voicedots-ai-widget",
+  "version": "3.1.0",
+  "private": false,
+  "description": "VoiceDots AI widget that enables websites to interact with visitors through conversational voice AI.",
+  "type": "module",
+  "main": "./dist/voicedots-widget.umd.cjs",
+  "module": "./dist/voicedots-widget.js",
+  "unpkg": "./dist/voicedots-widget.umd.cjs",
+  "jsdelivr": "./dist/voicedots-widget.umd.cjs",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/voicedots-widget.js",
+      "require": "./dist/voicedots-widget.umd.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@elevenlabs/react": "^0.14.2",
+    "@lottiefiles/dotlottie-react": "^0.18.4",
+    "lucide-preact": "^0.577.0",
+    "preact": "^10.27.2",
+    "preact-custom-element": "^4.6.0",
+    "preact-router": "^4.1.2"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.2",
+    "@types/node": "^24.10.1",
+    "@types/postcss-prefix-selector": "^1.16.3",
+    "postcss-prefix-selector": "^2.1.1",
+    "terser": "^5.46.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-css-injected-by-js": "^4.0.1"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+.venv/
+.build-tmp/
+dist/
+.DS_Store
+*.log
+
+# Secrets — never commit
+.env
+**/.env
+*.pem
+*.key
