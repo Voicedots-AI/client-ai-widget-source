@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "preact/compat";
 
 /**
- * Sarvam low-latency voice controller (multi-tenant).
+ * Gemini Live voice controller (multi-tenant).
  *
  * Same returned interface as useVoicedotsConversationController — only the
  * transport differs: a WebSocket to the Sarvam pipeline backend
