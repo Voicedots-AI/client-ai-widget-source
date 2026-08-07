@@ -3,7 +3,8 @@
   "displayName": "Sona College of Technology AI Team",
   "tagName": "voicedots-ai",
   "embed": {
-    "title": "Sona AI Team",
+    "title": "Sona AI",
+    "brandName": "Sona AI",
     "pipeline": "gemini",
     "agentId": "voicedots_agent_sona_4h7k2m9q5v1x8z3t6w0b",
     "themeColor": "#0F52BA",

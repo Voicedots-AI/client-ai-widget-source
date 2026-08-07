@@ -10,7 +10,9 @@ import StudentRecordModal from "../modals/StudentRecordModal";
 import type { Avatar } from "../features/types";
 
 
-export default function AITeamWidget({ title, agentId, avatars, logo, pos, mini, msg, pipeline, wsUrl }: { title: string, agentId: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, msg: string, pipeline?: string, wsUrl?: string }) {
+export default function AITeamWidget({ title, brandName, agentId, avatars, logo, pos, mini, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, msg: string, pipeline?: string, wsUrl?: string }) {
+  // The collapsed pill shows the client's own name; falls back to ours.
+  const pillName = brandName || "VoiceDots";
   const [minimized, setMinimized] = useState(mini);
   let tag = "default";
   let conversation;
@@ -212,10 +214,10 @@ export default function AITeamWidget({ title, agentId, avatars, logo, pos, mini,
           <button className="vd-pill" onClick={() => setMinimized(false)}>
             <div className={`vd-pill-icon-container ${conversation.isSpeaking ? 'pulse' : ''}`}>
               <div className="vd-pill-icon">
-                <img src={logo} alt="VoiceDots Logo" className="vd-pill-logo" />
+                <img src={logo} alt={`${pillName} logo`} className="vd-pill-logo" />
               </div>
             </div>
-            <span className="vd-pill-text">VoiceDots</span>
+            <span className="vd-pill-text">{pillName}</span>
           </button>
         </div>
       )}

@@ -43,6 +43,7 @@ export default function WidgetRoot({ config }: { config: string }) {
         {/* Main Widget UI */}
         <AITeamWidget 
           title={parsedConfig.title} 
+          brandName={parsedConfig.brandName}
           agentId={parsedConfig.agentId} 
           avatars={parsedConfig.avatars}
           logo={parsedConfig.logo}
