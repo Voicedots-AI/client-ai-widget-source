@@ -21,12 +21,15 @@ export default function DataCollectionModal({
 }: DataCollectionModalProps) {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
-  // Initialize only when the modal opens — re-running on every `data` change
-  // would wipe what the user is typing if the agent pushes an update mid-edit.
+  // Initialize fields when modal opens
   useEffect(() => {
     if (isOpen) {
       const initialData: Record<string, string> = {};
-      Object.entries(data || {}).forEach(([k, v]) => {
+      const defaultFields = { Name: "", Email: "", Phone: "", Inquiry: "" };
+      const hasValidKeys = data && Object.keys(data).length > 0;
+      const sourceData = hasValidKeys ? data : defaultFields;
+      
+      Object.entries(sourceData).forEach(([k, v]) => {
         initialData[k] = v?.toString() ?? "";
       });
       setFormData(initialData);
