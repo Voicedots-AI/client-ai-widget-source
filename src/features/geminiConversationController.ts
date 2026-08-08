@@ -69,12 +69,13 @@ class MicCapture extends AudioWorkletProcessor {
     super();
     this.acc = []; this.accLen = 0;
     this.ratio = sampleRate / ${MIC_SAMPLE_RATE};
+    this.speaking = false; this.quietChunks = 0; this.preRoll = [];
   }
   process(inputs) {
     const inp = inputs[0] && inputs[0][0];
     if (!inp) return true;
     this.acc.push(new Float32Array(inp)); this.accLen += inp.length;
-    if (this.accLen >= 2048 * this.ratio) {
+    if (this.accLen >= 640 * this.ratio) {
       const all = new Float32Array(this.accLen);
       let o = 0; for (const a of this.acc) { all.set(a, o); o += a.length; }
       this.acc = []; this.accLen = 0;
@@ -87,7 +88,29 @@ class MicCapture extends AudioWorkletProcessor {
         const v = Math.max(-1, Math.min(1, s / Math.max(1, to - from)));
         out[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
       }
-      this.port.postMessage(out.buffer, [out.buffer]);
+      let energy = 0;
+      for (let i = 0; i < out.length; i++) { const v = out[i] / 32768; energy += v * v; }
+      const active = Math.sqrt(energy / Math.max(1, out.length)) >= 0.004;
+      if (!this.speaking) {
+        this.preRoll.push(out);
+        if (this.preRoll.length > 5) this.preRoll.shift();
+        if (active) {
+          this.speaking = true; this.quietChunks = 0;
+          for (const chunk of this.preRoll) {
+            const data = chunk.buffer;
+            this.port.postMessage(data, [data]);
+          }
+          this.preRoll = [];
+        }
+      } else {
+        const data = out.buffer;
+        this.port.postMessage(data, [data]);
+        this.quietChunks = active ? 0 : this.quietChunks + 1;
+        if (this.quietChunks >= 20) {
+          this.speaking = false; this.quietChunks = 0;
+          this.port.postMessage("audio_stream_end");
+        }
+      }
     }
     return true;
   }
@@ -167,6 +190,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         micMutedRef.current = next;
         setMicMuted(next);
         streamRef.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
+        if (next) sendJSON({ type: "AUDIO_STREAM_END" });
     };
 
     const playAudioChunk = (buf: ArrayBuffer) => {
@@ -338,7 +362,12 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 const micNode = new AudioWorkletNode(micCtx, "mic-capture");
                 micNodeRef.current = micNode;
                 micNode.port.onmessage = (e) => {
-                    if (ws.readyState !== WebSocket.OPEN || micMutedRef.current) return;
+                    if (ws.readyState !== WebSocket.OPEN) return;
+                    if (e.data === "audio_stream_end") {
+                        ws.send(JSON.stringify({ type: "AUDIO_STREAM_END" }));
+                        return;
+                    }
+                    if (micMutedRef.current) return;
                     ws.send(e.data);
                 };
                 source.connect(micNode);
