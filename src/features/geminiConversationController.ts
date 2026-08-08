@@ -129,6 +129,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     const playDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     const micMutedRef = useRef(false);
+    const agentAudioActiveRef = useRef(false);
 
     const sendJSON = (obj: Record<string, unknown>) => {
         const ws = wsRef.current;
@@ -170,6 +171,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     };
 
     const playAudioChunk = (buf: ArrayBuffer) => {
+        agentAudioActiveRef.current = true;
         const ctx = playCtxRef.current;
         if (ctx?.state === "suspended") ctx.resume().catch(() => {});
         playerNodeRef.current?.port.postMessage(buf, [buf]);
@@ -178,6 +180,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     // Barge-in / stop: flush the player worklet's queue.
     const stopPlayback = () => {
         playerNodeRef.current?.port.postMessage("clear");
+        agentAudioActiveRef.current = false;
     };
 
     const cleanup = () => {
@@ -305,6 +308,9 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             await playCtx.audioWorklet.addModule(url);
             const playerNode = new AudioWorkletNode(playCtx, "pcm-player");
             playerNodeRef.current = playerNode;
+            playerNode.port.onmessage = (e) => {
+                if (e.data === "drained") agentAudioActiveRef.current = false;
+            };
 
             // Route agent audio via an <audio> element so the browser's echo
             // canceller subtracts it from the mic.
@@ -338,7 +344,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 const micNode = new AudioWorkletNode(micCtx, "mic-capture");
                 micNodeRef.current = micNode;
                 micNode.port.onmessage = (e) => {
-                    if (ws.readyState !== WebSocket.OPEN || micMutedRef.current) return;
+                    if (ws.readyState !== WebSocket.OPEN || micMutedRef.current || agentAudioActiveRef.current) return;
                     ws.send(e.data);
                 };
                 source.connect(micNode);
