@@ -172,6 +172,34 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         setUserData(data);
         setDataCollectionOpen(false);
         markLeadCaptured();
+
+        // Save lead data in browser localStorage for direct client inspection
+        try {
+            const leadRecord = {
+                ...data,
+                agentId: agentIdRef.current || "voicedots_agent",
+                timestamp: new Date().toISOString(),
+                url: typeof window !== "undefined" ? window.location.href : ""
+            };
+            const existingStr = localStorage.getItem("voicedots_captured_leads");
+            const existing = existingStr ? JSON.parse(existingStr) : [];
+            existing.push(leadRecord);
+            localStorage.setItem("voicedots_captured_leads", JSON.stringify(existing));
+
+            // Log to console for quick developer feedback
+            console.log("📌 [VoiceDots] Lead Captured & Saved:", leadRecord);
+
+            // Dispatch event for host website JavaScript listeners
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("voicedots_lead", { detail: leadRecord }));
+                if (typeof (window as any).VoiceDotsOnLeadCaptured === "function") {
+                    (window as any).VoiceDotsOnLeadCaptured(leadRecord);
+                }
+            }
+        } catch (e) {
+            console.warn("[VoiceDots] localStorage save error:", e);
+        }
+
         sendJSON({ type: "USER_DATA", data });
         sendJSON({ type: "POPUP_STATE", open: false });
     };
