@@ -69,13 +69,12 @@ class MicCapture extends AudioWorkletProcessor {
     super();
     this.acc = []; this.accLen = 0;
     this.ratio = sampleRate / ${MIC_SAMPLE_RATE};
-    this.speaking = false; this.quietChunks = 0; this.preRoll = [];
   }
   process(inputs) {
     const inp = inputs[0] && inputs[0][0];
     if (!inp) return true;
     this.acc.push(new Float32Array(inp)); this.accLen += inp.length;
-    if (this.accLen >= 640 * this.ratio) {
+    if (this.accLen >= 2048 * this.ratio) {
       const all = new Float32Array(this.accLen);
       let o = 0; for (const a of this.acc) { all.set(a, o); o += a.length; }
       this.acc = []; this.accLen = 0;
@@ -88,29 +87,7 @@ class MicCapture extends AudioWorkletProcessor {
         const v = Math.max(-1, Math.min(1, s / Math.max(1, to - from)));
         out[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
       }
-      let energy = 0;
-      for (let i = 0; i < out.length; i++) { const v = out[i] / 32768; energy += v * v; }
-      const active = Math.sqrt(energy / Math.max(1, out.length)) >= 0.004;
-      if (!this.speaking) {
-        this.preRoll.push(out);
-        if (this.preRoll.length > 5) this.preRoll.shift();
-        if (active) {
-          this.speaking = true; this.quietChunks = 0;
-          for (const chunk of this.preRoll) {
-            const data = chunk.buffer;
-            this.port.postMessage(data, [data]);
-          }
-          this.preRoll = [];
-        }
-      } else {
-        const data = out.buffer;
-        this.port.postMessage(data, [data]);
-        this.quietChunks = active ? 0 : this.quietChunks + 1;
-        if (this.quietChunks >= 20) {
-          this.speaking = false; this.quietChunks = 0;
-          this.port.postMessage("audio_stream_end");
-        }
-      }
+      this.port.postMessage(out.buffer, [out.buffer]);
     }
     return true;
   }
@@ -172,6 +149,34 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         setUserData(data);
         setDataCollectionOpen(false);
         markLeadCaptured();
+
+        // Save lead data in browser localStorage for direct client inspection
+        try {
+            const leadRecord = {
+                ...data,
+                agentId: agentIdRef.current || "voicedots_agent",
+                timestamp: new Date().toISOString(),
+                url: typeof window !== "undefined" ? window.location.href : ""
+            };
+            const existingStr = localStorage.getItem("voicedots_captured_leads");
+            const existing = existingStr ? JSON.parse(existingStr) : [];
+            existing.push(leadRecord);
+            localStorage.setItem("voicedots_captured_leads", JSON.stringify(existing));
+
+            // Log to console for quick developer feedback
+            console.log("📌 [VoiceDots] Lead Captured & Saved:", leadRecord);
+
+            // Dispatch event for host website JavaScript listeners
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("voicedots_lead", { detail: leadRecord }));
+                if (typeof (window as any).VoiceDotsOnLeadCaptured === "function") {
+                    (window as any).VoiceDotsOnLeadCaptured(leadRecord);
+                }
+            }
+        } catch (e) {
+            console.warn("[VoiceDots] localStorage save error:", e);
+        }
+
         sendJSON({ type: "USER_DATA", data });
         sendJSON({ type: "POPUP_STATE", open: false });
     };
@@ -190,7 +195,6 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         micMutedRef.current = next;
         setMicMuted(next);
         streamRef.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
-        if (next) sendJSON({ type: "AUDIO_STREAM_END" });
     };
 
     const playAudioChunk = (buf: ArrayBuffer) => {
@@ -362,12 +366,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 const micNode = new AudioWorkletNode(micCtx, "mic-capture");
                 micNodeRef.current = micNode;
                 micNode.port.onmessage = (e) => {
-                    if (ws.readyState !== WebSocket.OPEN) return;
-                    if (e.data === "audio_stream_end") {
-                        ws.send(JSON.stringify({ type: "AUDIO_STREAM_END" }));
-                        return;
-                    }
-                    if (micMutedRef.current) return;
+                    if (ws.readyState !== WebSocket.OPEN || micMutedRef.current) return;
                     ws.send(e.data);
                 };
                 source.connect(micNode);
