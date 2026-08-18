@@ -5,6 +5,8 @@ import { PortalContext } from '../features/PortalContext';
 // import { SoftNavigation } from '../lib/navigation';
 import widgetStyles from '../styles/widget.css?inline';
 
+const SONA_AGENT_ID = 'voicedots_agent_sona_4h7k2m9q5v1x8z3t6w0b';
+
 export default function WidgetRoot({ config }: { config: string }) {
   const portalRef = useRef<HTMLDivElement>(null);
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
@@ -32,6 +34,12 @@ export default function WidgetRoot({ config }: { config: string }) {
 
   const themeColor = parsedConfig.themeColor || '#8B5CF6';
   const widgetWidth = parsedConfig.widgetWidth || "300px";
+  // Sona's production snippet is injected through GTM and predates the
+  // `minimized` option. Its client-specific CDN bundle must therefore supply
+  // the safe default until their GTM tag is updated. An explicit value always
+  // wins, and every other tenant retains the existing expanded default.
+  const initiallyMinimized = parsedConfig.minimized
+    ?? parsedConfig.agentId === SONA_AGENT_ID;
 
   return (
     <PortalContext.Provider value={portalHost}>
@@ -48,7 +56,7 @@ export default function WidgetRoot({ config }: { config: string }) {
           avatars={parsedConfig.avatars}
           logo={parsedConfig.logo}
           pos={parsedConfig.pos || 'right'} 
-          mini={parsedConfig.minimized || false }
+          mini={initiallyMinimized}
           msg={parsedConfig.pillMessage || ""}
           pipeline={parsedConfig.pipeline}
           wsUrl={parsedConfig.wsUrl}
