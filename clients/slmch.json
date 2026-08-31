@@ -4,11 +4,14 @@
   "tagName": "voicedots-ai",
   "migratedFromLegacy": true,
   "embed": {
-    "title": "Sri Lalithambigai Medical AI Team",
+    "title": "SLMCH AI Team",
     "pipeline": "gemini",
     "agentId": "voicedots_agent_xziy53avs4wjii8a2m5veegs3hc73bpo",
-    "themeColor": "#9966FE",
-    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "themeColor": "#242b8f",
+    "logo": "https://slmch.ac.in/logo/logo.png",
+    "pos": "right",
+    "widgetWidth": "300px",
+    "pillMessage": "Talk with AI Avatars!",
     "avatars": [
       {
         "name": "about_us",
@@ -23,7 +26,7 @@
       {
         "name": "admissions",
         "role": "Admissions",
-        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/srk.lottie"
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/support.lottie"
       },
       {
         "name": "clinical_facilities",
