@@ -10,10 +10,16 @@ import StudentRecordModal from "../modals/StudentRecordModal";
 import type { Avatar } from "../features/types";
 
 
-export default function AITeamWidget({ title, brandName, agentId, avatars, logo, pos, mini, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, msg: string, pipeline?: string, wsUrl?: string }) {
+export default function AITeamWidget({ title, brandName, agentId, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
   // The collapsed pill shows the client's own name; falls back to ours.
   const pillName = brandName || "VoiceDots";
   const [minimized, setMinimized] = useState(mini);
+  // The auto-close is a greeting, not a rule: it fires once, for the card the
+  // visitor did not open themselves. Any sign they want the card — opening it,
+  // closing it, starting a call — spends it for the rest of the page view.
+  const autoCloseSpent = useRef(!autoCloseSeconds || mini);
+  const closeWidget = () => { autoCloseSpent.current = true; setMinimized(true); };
+  const openWidget = () => { autoCloseSpent.current = true; setMinimized(false); };
   let tag = "default";
   let conversation;
   // "websocket" and "sarvam" are legacy aliases kept so older embeds keep working;
@@ -51,6 +57,22 @@ export default function AITeamWidget({ title, brandName, agentId, avatars, logo,
       avatarRefs.current[activeName]?.stopTalking();
     }
   }, [conversation.isSpeaking, conversation.activeAvatar]);
+
+  // Auto-close: fold the opening card away after the configured seconds unless
+  // the visitor has engaged with it by then.
+  useEffect(() => {
+    if (autoCloseSpent.current || minimized) return;
+    if (conversation.isConnected || conversation.isConnecting) {
+      autoCloseSpent.current = true;
+      return;
+    }
+    const timer = setTimeout(() => {
+      autoCloseSpent.current = true;
+      setMinimized(true);
+    }, autoCloseSeconds * 1000);
+
+    return () => clearTimeout(timer);
+  }, [autoCloseSeconds, minimized, conversation.isConnected, conversation.isConnecting]);
 
   // Timer Logic
   useEffect(() => {
@@ -125,7 +147,7 @@ export default function AITeamWidget({ title, brandName, agentId, avatars, logo,
                 <span className="vd-timer">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
               )}
             </div>
-            <button onClick={() => setMinimized(true)} className="vd-icon-btn">
+            <button onClick={closeWidget} className="vd-icon-btn">
               <LucideMinimize2 size={18} />
             </button>
           </div>
@@ -211,7 +233,7 @@ export default function AITeamWidget({ title, brandName, agentId, avatars, logo,
             </div>
           )}
 
-          <button className="vd-pill" onClick={() => setMinimized(false)}>
+          <button className="vd-pill" onClick={openWidget}>
             <div className={`vd-pill-icon-container ${conversation.isSpeaking ? 'pulse' : ''}`}>
               <div className="vd-pill-icon">
                 <img src={logo} alt={`${pillName} logo`} className="vd-pill-logo" />

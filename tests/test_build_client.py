@@ -40,7 +40,7 @@ def write_config(repo, name, **overrides):
     return config
 
 
-def fake_vite(out_dir):
+def fake_vite(out_dir, forced=None):
     """Stand-in for the real build: writes a bundle where vite would."""
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "voicedots-widget.js").write_text("console.log('bundle');")
@@ -129,7 +129,7 @@ def test_build_writes_bundle_and_snippet(repo):
 def test_build_fails_when_no_bundle_produced(repo):
     write_config(repo, "acme")
     with pytest.raises(bc.BuildError, match="no bundle"):
-        bc.build("acme", runner=lambda out: out.mkdir(parents=True, exist_ok=True))
+        bc.build("acme", runner=lambda out, forced: out.mkdir(parents=True, exist_ok=True))
 
 
 def test_build_leaves_no_staging_directory(repo):
@@ -142,7 +142,7 @@ def test_rebuild_overwrites_previous_bundle(repo):
     write_config(repo, "acme")
     bc.build("acme", runner=fake_vite)
 
-    def newer(out_dir):
+    def newer(out_dir, forced=None):
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "voicedots-widget.js").write_text("console.log('v2');")
 
@@ -154,7 +154,7 @@ def test_one_client_build_does_not_touch_another(repo):
     write_config(repo, "acme")
     write_config(repo, "other")
     bc.build("other", runner=fake_vite)
-    bc.build("acme", runner=lambda out: (
+    bc.build("acme", runner=lambda out, forced: (
         out.mkdir(parents=True, exist_ok=True),
         (out / "voicedots-widget.js").write_text("acme only"),
     ))
@@ -176,3 +176,99 @@ def test_snippet_is_readable_multiline(repo):
     # Still one attribute: the JSON must remain inside a single pair of quotes.
     assert snippet.count("config='") == 1
     assert snippet.count("'></") == 1
+
+
+# ── forced config ────────────────────────────────────────────────────────────
+
+def test_forced_config_reaches_the_build(repo):
+    """A client whose page we cannot edit gets their settings from the bundle."""
+    write_config(repo, "acme", forceEmbed={"widgetWidth": "240px", "minimized": True})
+    seen = {}
+
+    def runner(out_dir, forced):
+        seen.update(forced)
+        fake_vite(out_dir)
+
+    bc.build("acme", runner=runner)
+    assert seen == {"widgetWidth": "240px", "minimized": True}
+
+
+def test_build_without_forced_config_passes_nothing(repo):
+    write_config(repo, "acme")
+    seen = []
+
+    def runner(out_dir, forced):
+        seen.append(forced)
+        fake_vite(out_dir)
+
+    bc.build("acme", runner=runner)
+    assert seen == [{}]
+
+
+def test_rejects_non_object_forced_config(repo):
+    write_config(repo, "acme", forceEmbed=["widgetWidth"])
+    with pytest.raises(bc.BuildError, match="forceEmbed"):
+        bc.load_config("acme")
+
+
+def test_forced_config_is_not_pasted_into_the_snippet(repo):
+    """It lives in the bundle; repeating it in the snippet would let it drift."""
+    config = write_config(repo, "acme", forceEmbed={"widgetWidth": "240px"})
+    assert "forceEmbed" not in bc.embed_snippet(config)
+
+
+def test_run_vite_hands_the_forced_config_to_vite(monkeypatch):
+    calls = {}
+
+    def fake_run(cmd, **kwargs):
+        calls["cmd"] = cmd
+        calls["env"] = kwargs["env"]
+
+    monkeypatch.setattr(bc.subprocess, "run", fake_run)
+    bc.run_vite(Path("/tmp/out"), {"minimized": True})
+    assert json.loads(calls["env"]["VD_FORCED_CONFIG"]) == {"minimized": True}
+    # The rest of the environment must survive, or npm/node break.
+    assert "PATH" in calls["env"]
+
+
+def test_run_vite_without_forced_config_sends_an_empty_object(monkeypatch):
+    calls = {}
+    monkeypatch.setattr(bc.subprocess, "run", lambda cmd, **kw: calls.update(kw))
+    bc.run_vite(Path("/tmp/out"))
+    assert calls["env"]["VD_FORCED_CONFIG"] == "{}"
+
+
+# ── the two clients this behaviour was built for ─────────────────────────────
+
+REAL_CLIENTS = Path(__file__).resolve().parent.parent / "clients"
+
+
+def real_config(name):
+    return json.loads((REAL_CLIENTS / f"{name}.json").read_text())
+
+
+@pytest.mark.parametrize("name", ["slmch", "mgr"])
+def test_reonboarded_clients_keep_the_small_card(name):
+    """Both sites ran a 240px card before the migration and want it back."""
+    assert real_config(name)["forceEmbed"]["widgetWidth"] == "240px"
+
+
+def test_slmch_greets_on_desktop_and_stays_folded_on_mobile():
+    forced = real_config("slmch")["forceEmbed"]
+    assert forced["minimized"] is False
+    assert forced["mobileMinimized"] is True
+    assert forced["autoCloseSeconds"] == 30
+
+
+def test_mgr_starts_closed_everywhere():
+    forced = real_config("mgr")["forceEmbed"]
+    assert forced["minimized"] is True
+    assert forced["mobileMinimized"] is True
+
+
+@pytest.mark.parametrize("name", ["slmch", "mgr", "sona"])
+def test_forced_settings_match_the_snippet_we_hand_the_client(name):
+    """The snippet is what a new page pastes; it must not contradict the bundle."""
+    config = real_config(name)
+    for key, value in config["forceEmbed"].items():
+        assert config["embed"][key] == value, f"{name}: embed.{key} drifted"

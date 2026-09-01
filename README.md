@@ -39,13 +39,45 @@ tests/                   pytest suite for the build script
 Building one client never touches another. Each client updates only when you
 rebuild and push that client.
 
+## How the widget starts up
+
+These keys go in the `embed` block of `clients/<name>.json`:
+
+| Key | Effect |
+|---|---|
+| `widgetWidth` | Card width, e.g. `"240px"`. Defaults to `300px` |
+| `minimized` | `true` starts as the collapsed pill instead of the open card |
+| `mobileMinimized` | Same, for viewports ≤ 768px. Falls back to `minimized` when absent |
+| `autoCloseSeconds` | Fold the opening card away after N seconds. Cancelled the moment the visitor opens, closes, or talks to it, and never fires twice |
+
+The viewport is read once, when the widget mounts, so resizing a window never
+takes the card away from someone mid-conversation.
+
+## Settings a client's page cannot give us
+
+The `config` attribute lives in the client's own HTML. Some of them pasted it
+into a CMS or a GTM tag we no longer have access to, so their snippet is frozen
+at whatever it said the day it went up.
+
+For those, put the keys in a `forceEmbed` block alongside `embed`:
+
+```json
+"forceEmbed": { "widgetWidth": "240px", "minimized": true }
+```
+
+`forceEmbed` is baked into that client's bundle at build time and beats the
+config on their page, so a rebuild plus a CDN purge changes their widget with
+no edit to their HTML. Keep the same values in `embed` too — that is what a
+fresh paste would use, and the test suite fails if the two drift apart.
+
 ## What is configured where
 
 | Thing | Where it lives |
 |---|---|
 | Which tools the agent has (lead capture, ERP lookup, attendance) | Database — `enabled_tools` on the agent profile |
 | Spoken name, greeting, persona wording | Database — agent profile |
-| Title, logo, theme colour, avatars, position | `clients/<name>.json` → the embed snippet |
+| Title, logo, theme colour, avatars, position, size, startup state | `clients/<name>.json` → the embed snippet |
+| The same, for a client whose HTML we cannot edit | `clients/<name>.json` → `forceEmbed`, baked into their bundle |
 | Custom HTML tag name | `clients/<name>.json` → `tagName` |
 | Bug fixes and new features | `src/`, once, for everyone |
 

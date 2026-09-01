@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -64,6 +65,9 @@ def load_config(name: str) -> dict:
             raise BuildError(f"{path.name}: embed.{field} is required")
     if "REPLACE_ME" in str(embed["agentId"]):
         raise BuildError(f"{path.name}: embed.agentId is still the placeholder")
+    forced = config.get("forceEmbed", {})
+    if not isinstance(forced, dict):
+        raise BuildError(f"{path.name}: 'forceEmbed' must be an object of embed keys")
     return config
 
 
@@ -85,25 +89,33 @@ def embed_snippet(config: dict) -> str:
     )
 
 
-def run_vite(out_dir: Path) -> None:
-    """Produce the bundle. Kept separate so tests can stub it out."""
+def run_vite(out_dir: Path, forced: dict | None = None) -> None:
+    """Produce the bundle. Kept separate so tests can stub it out.
+
+    `forced` is baked into the bundle and beats the config on the client's own
+    page — the only way to change a setting for a client whose snippet lives
+    somewhere we cannot edit.
+    """
+    env = dict(os.environ, VD_FORCED_CONFIG=json.dumps(forced or {}))
     subprocess.run(
         ["npm", "run", "build", "--", "--outDir", str(out_dir), "--emptyOutDir"],
         cwd=ROOT,
         check=True,
+        env=env,
     )
 
 
 def build(name: str, *, runner=run_vite) -> Path:
     """Build one client and return the path to their bundle."""
     config = load_config(name)
+    forced = config.get("forceEmbed") or {}
     out = BUILDS / name
     staging = ROOT / ".build-tmp" / name
     if staging.exists():
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
 
-    runner(staging)
+    runner(staging, forced)
 
     produced = staging / "voicedots-widget.js"
     if not produced.exists():

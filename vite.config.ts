@@ -17,6 +17,12 @@ export default defineConfig({
       'react/jsx-runtime': 'preact/jsx-runtime',
     },
   },
+  // Config the client's own page cannot supply. Their snippet was pasted once
+  // and is often out of our reach (a CMS we do not own, a GTM tag), so
+  // clients/<name>.json can force settings into that client's bundle instead.
+  define: {
+    __VD_FORCED_CONFIG__: process.env.VD_FORCED_CONFIG || '{}',
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/web-component/index.ts'), 

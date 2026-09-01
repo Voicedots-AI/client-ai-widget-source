@@ -5,7 +5,24 @@ import { PortalContext } from '../features/PortalContext';
 // import { SoftNavigation } from '../lib/navigation';
 import widgetStyles from '../styles/widget.css?inline';
 
-const SONA_AGENT_ID = 'voicedots_agent_sona_4h7k2m9q5v1x8z3t6w0b';
+// Anything a client's page still needs to control is read from their snippet.
+// `forceEmbed` in clients/<name>.json wins over it, because several tenants
+// pasted their snippet into a CMS or GTM tag we cannot edit any more — their
+// bundle is then the only place a setting can still be changed.
+const forcedConfig: Record<string, unknown> =
+  typeof __VD_FORCED_CONFIG__ === 'object' && __VD_FORCED_CONFIG__ !== null
+    ? __VD_FORCED_CONFIG__
+    : {};
+
+// Phones and small tablets. Matches the breakpoint the widget CSS already uses
+// for its own layout, so "mobile" means one thing across the widget.
+const MOBILE_QUERY = '(max-width: 768px)';
+
+function isMobileViewport() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(MOBILE_QUERY).matches;
+}
 
 export default function WidgetRoot({ config }: { config: string }) {
   const portalRef = useRef<HTMLDivElement>(null);
@@ -25,21 +42,31 @@ export default function WidgetRoot({ config }: { config: string }) {
 
   const parsedConfig = useMemo(() => {
     try {
-      return JSON.parse(config);
+      return { ...JSON.parse(config), ...forcedConfig };
     } catch (e) {
       console.error("VoiceDots: JSON Parse Error", e);
-      return { avatars: [] };
+      return { avatars: [], ...forcedConfig };
     }
   }, [config]);
 
   const themeColor = parsedConfig.themeColor || '#8B5CF6';
   const widgetWidth = parsedConfig.widgetWidth || "300px";
-  // Sona's production snippet is injected through GTM and predates the
-  // `minimized` option. Its client-specific CDN bundle must therefore supply
-  // the safe default until their GTM tag is updated. An explicit value always
-  // wins, and every other tenant retains the existing expanded default.
-  const initiallyMinimized = parsedConfig.minimized
-    ?? parsedConfig.agentId === SONA_AGENT_ID;
+
+  // How the widget starts. `minimized` is the desktop answer; `mobileMinimized`
+  // overrides it on a phone, where an open card covers most of the page. The
+  // viewport is read once, at mount, so a later resize never yanks the card
+  // away from someone using it.
+  const initiallyMinimized = useMemo(() => {
+    if (isMobileViewport() && parsedConfig.mobileMinimized !== undefined) {
+      return Boolean(parsedConfig.mobileMinimized);
+    }
+    return Boolean(parsedConfig.minimized);
+  }, [parsedConfig]);
+
+  // Seconds the card stays open before folding itself away, for clients who
+  // want the widget noticed but not left sitting on top of their page. 0 or
+  // absent means it stays open until the visitor closes it.
+  const autoCloseSeconds = Number(parsedConfig.autoCloseSeconds) || 0;
 
   return (
     <PortalContext.Provider value={portalHost}>
@@ -57,6 +84,7 @@ export default function WidgetRoot({ config }: { config: string }) {
           logo={parsedConfig.logo}
           pos={parsedConfig.pos || 'right'} 
           mini={initiallyMinimized}
+          autoCloseSeconds={autoCloseSeconds}
           msg={parsedConfig.pillMessage || ""}
           pipeline={parsedConfig.pipeline}
           wsUrl={parsedConfig.wsUrl}

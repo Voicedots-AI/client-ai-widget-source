@@ -33,5 +33,8 @@
         "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/loan.lottie"
       }
     ]
+  },
+  "forceEmbed": {
+    "minimized": true
   }
 }
