@@ -7,7 +7,7 @@
     "brandName": "CMRTC AI",
     "pipeline": "gemini",
     "agentId": "voicedots_agent_cmrtc_fbe08f2d9d25",
-    "minimized": true,
+    "minimized": false,
     "themeColor": "#173B73",
     "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
     "pos": "right",
@@ -35,6 +35,6 @@
     ]
   },
   "forceEmbed": {
-    "minimized": true
+    "minimized": false
   }
 }
