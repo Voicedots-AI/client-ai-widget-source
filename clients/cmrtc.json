@@ -1,0 +1,40 @@
+{
+  "client": "cmrtc",
+  "displayName": "CMR Technical Campus AI Team",
+  "tagName": "voicedots-ai",
+  "embed": {
+    "title": "CMRTC AI Team",
+    "brandName": "CMRTC AI",
+    "pipeline": "gemini",
+    "agentId": "voicedots_agent_cmrtc_fbe08f2d9d25",
+    "minimized": true,
+    "themeColor": "#173B73",
+    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "pos": "right",
+    "avatars": [
+      {
+        "name": "about",
+        "role": "About Us",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/sales.lottie"
+      },
+      {
+        "name": "courses",
+        "role": "Courses",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/support.lottie"
+      },
+      {
+        "name": "admission",
+        "role": "Admissions",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/ceo.lottie"
+      },
+      {
+        "name": "placement",
+        "role": "Placements",
+        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/loan.lottie"
+      }
+    ]
+  },
+  "forceEmbed": {
+    "minimized": true
+  }
+}
