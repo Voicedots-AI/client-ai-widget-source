@@ -160,3 +160,23 @@ When requesting assistance, please send:
 - Any browser-console error visible to the website administrator
 
 Do not send passwords or website administrator credentials.
+
+## Imported student records — September 2026
+
+The CMRTC bundle supports the existing voice-triggered student-record modal.
+Ask **“Show my attendance”** or **“Show my marks”**, then type the complete CMRTC
+college roll number into the form and choose **View Details**. Both requests use
+the college roll number. This pilot uses exact roll-number lookup, not college
+SSO, a password, or an OTP.
+
+Attendance shows the supplied cumulative July 6–September 4, 2026 export, including
+conducted, present and absent hours and the source percentage. Marks show original
+academic sections of matching progress reports; a report can have multiple image
+parts. The printed report heading identifies the examination semester. Missing
+fees, daily/weekly/monthly attendance and unmatched reports display an explicit
+unavailable message. Student and parent contacts are not returned.
+
+The bundle calls `POST https://voice.voicedots.io/cmrtc-records/v1/lookup` with
+`identifier`, `record_type` and `period`. It uses the CMRTC route only for agent
+`voicedots_agent_cmrtc_fbe08f2d9d25`. Other client bundles retain their existing
+flows. The installed CMRTC script URL and embed snippet remain the same.

@@ -131,6 +131,7 @@ export default function AITeamWidget({ title, brandName, agentId, avatars, logo,
       {tag === "voicedots" && studentConversation.studentFlow && (
         <StudentRecordModal
           flow={studentConversation.studentFlow}
+          client={agentId === "voicedots_agent_cmrtc_fbe08f2d9d25" ? "cmrtc" : "demo"}
           onClose={studentConversation.closeStudentFlow}
           onLogin={studentConversation.studentLoginSuccess}
           onResult={studentConversation.studentResult}

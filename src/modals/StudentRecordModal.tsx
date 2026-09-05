@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState, useRef } from "preact/hooks";
 import { WidgetPortal } from "../components/WidgetPortal";
 
 type Intent = "fee" | "marks" | "attendance" | "academic_review" | "academic_contacts";
@@ -6,12 +6,14 @@ type Flow = { open: boolean; intent: Intent; period: string };
 
 const API = "https://voice.voicedots.io/student-demo/v1";
 
-export default function StudentRecordModal({ flow, onClose, onLogin, onResult }: {
+export default function StudentRecordModal({ flow, onClose, onLogin, onResult, client = "demo" }: {
   flow: Flow;
+  client?: "cmrtc" | "demo";
   onClose: () => void;
   onLogin: () => void;
   onResult: (status: string, identifier: string) => void;
 }) {
+  const requestNumber = useRef(0);
   const [step, setStep] = useState<"login" | "identifier" | "result">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -21,15 +23,16 @@ export default function StudentRecordModal({ flow, onClose, onLogin, onResult }:
   const [record, setRecord] = useState<any>(null);
 
   useEffect(() => {
+    requestNumber.current += 1;
     if (flow.open) {
-      setStep("login"); setUsername(""); setPassword(""); setIdentifier("");
+      setStep(client === "cmrtc" ? "identifier" : "login"); setUsername(""); setPassword(""); setIdentifier("");
       setError(""); setRecord(null); setLoading(false);
     }
-  }, [flow.open, flow.intent, flow.period]);
+  }, [flow.open, flow.intent, flow.period, client]);
 
   if (!flow.open) return null;
   const isMarks = flow.intent === "marks";
-  const label = isMarks ? "Registration Number" : "Roll Number";
+  const label = isMarks && client !== "cmrtc" ? "Registration Number" : "Roll Number";
 
   const login = () => {
     if (username !== "admin" || password !== "Ind123Ind@") {
@@ -41,19 +44,24 @@ export default function StudentRecordModal({ flow, onClose, onLogin, onResult }:
   const lookup = async () => {
     const clean = identifier.trim();
     if (!clean) { setError(`Enter the student's ${label}.`); return; }
+    const requestId = ++requestNumber.current;
     setLoading(true); setError("");
     try {
       const suffix = flow.intent === "attendance" ? `?period=${encodeURIComponent(flow.period)}` : "";
-      const response = await fetch(`${API}/records/${flow.intent}/${encodeURIComponent(clean)}${suffix}`);
+      const response = client === "cmrtc"
+        ? await fetch("https://voice.voicedots.io/cmrtc-records/v1/lookup", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({identifier: clean, record_type: flow.intent, period: flow.period})})
+        : await fetch(`${API}/records/${flow.intent}/${encodeURIComponent(clean)}${suffix}`);
       if (!response.ok) throw new Error(`Lookup failed (${response.status})`);
       const data = await response.json();
+      if (requestId !== requestNumber.current) return;
       if (data.status !== "found") {
-        setError(`No student record was found for ${clean}.`); onResult("empty", clean); return;
+        setError(data.message || `No student record was found for ${clean}.`); onResult(client === "cmrtc" ? data.status : "empty", clean); return;
       }
       setRecord(data); setStep("result"); onResult("shown", clean);
     } catch (e: any) {
+      if (requestId !== requestNumber.current) return;
       setError(e?.message || "Unable to load student details."); onResult("error", clean);
-    } finally { setLoading(false); }
+    } finally { if (requestId === requestNumber.current) setLoading(false); }
   };
 
   const fields = record ? Object.entries(record).filter(([key, value]) =>
@@ -78,7 +86,7 @@ export default function StudentRecordModal({ flow, onClose, onLogin, onResult }:
           {step === "identifier" && <>
             <h2>{flow.intent === "marks" ? "Examination Results" : flow.intent === "attendance" ? `${flow.period[0].toUpperCase()}${flow.period.slice(1)} Attendance` : flow.intent === "fee" ? "Fee Details" : flow.intent === "academic_review" ? "Academic Review" : "Academic Contacts"}</h2>
             <p>Enter the student’s {label.toLowerCase()}.</p>
-            <label>{label}</label><input autoFocus placeholder={isMarks ? "e.g. SP23CSU155" : "e.g. SPC25CSU055"}
+            <label>{label}</label><input autoFocus placeholder={client === "cmrtc" ? "Enter your CMRTC college roll number" : isMarks ? "e.g. SP23CSU155" : "e.g. SPC25CSU055"}
               value={identifier} onInput={(e: any) => setIdentifier(e.currentTarget.value.toUpperCase())}
               onKeyDown={(e: any) => e.key === "Enter" && lookup()} />
             {error && <div className="vd-student-error">{error}</div>}
@@ -87,6 +95,8 @@ export default function StudentRecordModal({ flow, onClose, onLogin, onResult }:
           {step === "result" && record && <>
             <h2>{record.student_name}</h2><p>{record.department}</p>
             <div className="vd-student-results">
+              {record.subject_attendance?.map((s: any) => <div className="vd-student-row" key={s.subject}><span>{s.subject}</span><strong>{s.reported_value}</strong></div>)}
+              {record.reports?.map((r: any) => <section key={r.report_id}><h3>{r.title}</h3><p>Source page {r.page}</p><img src={r.image} alt={`${r.title} — academic report`} style={{width: "100%", height: "auto"}} /></section>)}
               {fields.map(([key, value]) => <div className="vd-student-row" key={key}><span>{key.replaceAll("_", " ")}</span><strong>{String(value)}</strong></div>)}
               {Array.isArray(record.subjects) && record.subjects.map((s: any) =>
                 <div className="vd-student-row" key={s.subject}><span>{s.subject}</span><strong>{s.marks} — {s.grade}</strong></div>)}
