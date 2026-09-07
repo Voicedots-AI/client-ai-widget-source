@@ -266,6 +266,14 @@ def test_mgr_starts_closed_everywhere():
     assert forced["mobileMinimized"] is True
 
 
+def test_cmrtc_forces_record_flow_and_starts_expanded_everywhere():
+    forced = real_config("cmrtc")["forceEmbed"]
+    assert forced["studentClient"] == "cmrtc"
+    assert forced["minimized"] is False
+    assert forced["mobileMinimized"] is False
+    assert forced["autoCloseSeconds"] == 0
+
+
 @pytest.mark.parametrize("name", ["slmch", "mgr", "sona"])
 def test_forced_settings_match_the_snippet_we_hand_the_client(name):
     """The snippet is what a new page pastes; it must not contradict the bundle."""

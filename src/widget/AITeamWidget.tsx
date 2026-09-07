@@ -10,7 +10,7 @@ import StudentRecordModal from "../modals/StudentRecordModal";
 import type { Avatar } from "../features/types";
 
 
-export default function AITeamWidget({ title, brandName, agentId, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
+export default function AITeamWidget({ title, brandName, agentId, studentClient, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, studentClient?: "cmrtc" | "demo", avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
   // The collapsed pill shows the client's own name; falls back to ours.
   const pillName = brandName || "VoiceDots";
   const [minimized, setMinimized] = useState(mini);
@@ -131,7 +131,7 @@ export default function AITeamWidget({ title, brandName, agentId, avatars, logo,
       {tag === "voicedots" && studentConversation.studentFlow && (
         <StudentRecordModal
           flow={studentConversation.studentFlow}
-          client={agentId === "voicedots_agent_cmrtc_fbe08f2d9d25" ? "cmrtc" : "demo"}
+          client={studentClient === "cmrtc" || agentId === "voicedots_agent_cmrtc_fbe08f2d9d25" ? "cmrtc" : "demo"}
           onClose={studentConversation.closeStudentFlow}
           onLogin={studentConversation.studentLoginSuccess}
           onResult={studentConversation.studentResult}

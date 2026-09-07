@@ -35,6 +35,9 @@
     ]
   },
   "forceEmbed": {
-    "minimized": false
+    "studentClient": "cmrtc",
+    "minimized": false,
+    "mobileMinimized": false,
+    "autoCloseSeconds": 0
   }
 }

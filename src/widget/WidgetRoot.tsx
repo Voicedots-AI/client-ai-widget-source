@@ -80,6 +80,7 @@ export default function WidgetRoot({ config }: { config: string }) {
           title={parsedConfig.title} 
           brandName={parsedConfig.brandName}
           agentId={parsedConfig.agentId} 
+          studentClient={parsedConfig.studentClient}
           avatars={parsedConfig.avatars}
           logo={parsedConfig.logo}
           pos={parsedConfig.pos || 'right'} 
