@@ -1,3 +1,5 @@
+// Shared only within this page and agent; never store demo credentials.
+const studentRecordSessions = new Map<string, number>();
 import { useCallback, useRef, useState } from "preact/compat";
 
 /**
@@ -206,6 +208,9 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     };
 
     const cleanup = () => {
+        studentRecordSessions.delete(agentIdRef.current);
+        setStudentFlow({ open: false, intent: "fee", period: "today" });
+        if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.onerror = null; }
         stopPlayback();
         wsRef.current?.close(); wsRef.current = null;
         streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null;
@@ -304,6 +309,9 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             const period = ["today", "week", "month", "semester"].includes(msg.args?.period)
                 ? msg.args.period : "today";
             setStudentFlow({ open: true, intent, period });
+            if ((studentRecordSessions.get(agentIdRef.current) || 0) > Date.now()) {
+                sendJSON({ type: "LOGIN_RESULT", status: "success", intent });
+            }
             sendJSON({ type: "POPUP_STATE", open: true });
         }
     };
@@ -446,13 +454,20 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         dataConfirmed,
         staffAttendanceOpen,
         closeStaffAttendance: () => setStaffAttendanceOpen(false),
+        studentAuthenticated: (studentRecordSessions.get(agentIdRef.current) || 0) > Date.now(),
         studentFlow,
         closeStudentFlow: () => {
             setStudentFlow((prev: any) => ({ ...prev, open: false }));
             sendJSON({ type: "POPUP_STATE", open: false });
-            sendJSON({ type: "LOGIN_RESULT", status: "cancelled", intent: studentFlow.intent });
+            if ((studentRecordSessions.get(agentIdRef.current) || 0) <= Date.now()) {
+                sendJSON({ type: "LOGIN_RESULT", status: "cancelled", intent: studentFlow.intent });
+            }
         },
-        studentLoginSuccess: () => sendJSON({ type: "LOGIN_RESULT", status: "success", intent: studentFlow.intent }),
+        studentLoginSuccess: () => {
+            studentRecordSessions.set(agentIdRef.current, Date.now() + 30 * 60 * 1000);
+            setStudentFlow((flow: any) => ({ ...flow }));
+            sendJSON({ type: "LOGIN_RESULT", status: "success", intent: studentFlow.intent });
+        },
         studentResult: (status: string, identifier: string) => sendJSON({
             type: "FEE_RESULT", status, intent: studentFlow.intent, rollNo: identifier,
         }),

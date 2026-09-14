@@ -6,8 +6,9 @@ type Flow = { open: boolean; intent: Intent; period: string };
 
 const API = "https://voice.voicedots.io/student-demo/v1";
 
-export default function StudentRecordModal({ flow, onClose, onLogin, onResult, client = "demo" }: {
+export default function StudentRecordModal({ flow, onClose, onLogin, onResult, authenticated = false, client = "demo" }: {
   flow: Flow;
+  authenticated?: boolean;
   client?: "cmrtc" | "demo";
   onClose: () => void;
   onLogin: () => void;
@@ -25,10 +26,10 @@ export default function StudentRecordModal({ flow, onClose, onLogin, onResult, c
   useEffect(() => {
     requestNumber.current += 1;
     if (flow.open) {
-      setStep(client === "cmrtc" ? "identifier" : "login"); setUsername(""); setPassword(""); setIdentifier("");
+      setStep(client === "cmrtc" || authenticated ? "identifier" : "login"); setUsername(""); setPassword(""); setIdentifier("");
       setError(""); setRecord(null); setLoading(false);
     }
-  }, [flow.open, flow.intent, flow.period, client]);
+  }, [flow.open, flow.intent, flow.period, client, authenticated]);
 
   if (!flow.open) return null;
   const isMarks = flow.intent === "marks";
