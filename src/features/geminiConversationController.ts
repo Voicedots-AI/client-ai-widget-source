@@ -131,6 +131,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     const [activeAvatar, setActiveAvatar] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loginOpen, setLoginOpen] = useState(false);
+    const [staffAttendanceOpen, setStaffAttendanceOpen] = useState(false);
     const [studentFlow, setStudentFlow] = useState<any>({ open: false, intent: "fee", period: "today" });
 
     // DATA COLLECTION STATE (same semantics as the LiveKit controller)
@@ -295,6 +296,8 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             }
         } else if (msg.function === "appointmentBooked") {
             console.log("[Tool] Appointment booked:", msg.args);
+        } else if (msg.function === "requestStaffAttendance") {
+            setStaffAttendanceOpen(true);
         } else if (msg.function === "requestLogin") {
             const intent = ["marks", "attendance", "academic_review", "academic_contacts"].includes(msg.args?.intent)
                 ? msg.args.intent : "fee";
@@ -441,6 +444,8 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         userData,
         setUserData,
         dataConfirmed,
+        staffAttendanceOpen,
+        closeStaffAttendance: () => setStaffAttendanceOpen(false),
         studentFlow,
         closeStudentFlow: () => {
             setStudentFlow((prev: any) => ({ ...prev, open: false }));

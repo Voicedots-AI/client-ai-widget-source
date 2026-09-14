@@ -6,11 +6,12 @@ import { useVoicedotsConversationController } from "../features/voicedotsConvers
 import { useGeminiConversationController } from "../features/geminiConversationController";
 import DataCollectionModal from "../modals/DataCollectionModal";
 import VoicedotsDataCollectionModal from "../modals/VoicedotsDataCollectionModal";
+import StaffAttendanceModal from "../modals/StaffAttendanceModal";
 import StudentRecordModal from "../modals/StudentRecordModal";
 import type { Avatar } from "../features/types";
 
 
-export default function AITeamWidget({ title, brandName, agentId, studentClient, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, studentClient?: "cmrtc" | "demo", avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
+export default function AITeamWidget({ title, brandName, agentId, studentClient, attendanceWorkspace, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, studentClient?: "cmrtc" | "demo", attendanceWorkspace?: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
   // The collapsed pill shows the client's own name; falls back to ours.
   const pillName = brandName || "VoiceDots";
   const [minimized, setMinimized] = useState(mini);
@@ -33,6 +34,13 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
     tag = "voicedots";
   }
   const studentConversation = conversation as any;
+  const [staffOpen, setStaffOpen] = useState(false);
+  const openStaff = () => { autoCloseSpent.current = true; conversation.stop(); setStaffOpen(true); };
+  useEffect(() => {
+    if (attendanceWorkspace && studentConversation.staffAttendanceOpen) {
+      openStaff(); studentConversation.closeStaffAttendance();
+    }
+  }, [attendanceWorkspace, studentConversation.staffAttendanceOpen]);
 
   const avatarRefs = useRef<Record<string, AvatarHandle | null>>({});
   const [timeLeft, setTimeLeft] = useState(360);
@@ -138,6 +146,7 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
         />
       )}
 
+      {staffOpen && attendanceWorkspace && <StaffAttendanceModal workspace={attendanceWorkspace} onClose={() => setStaffOpen(false)} />}
       {/* ================= MAIN WIDGET ================= */}
       {!minimized && (
         <div className="vd-main-card">
@@ -154,6 +163,7 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
           </div>
 
           <div className="vd-body">
+            {attendanceWorkspace && <button className="vd-btn-primary" style={{ marginBottom: "12px", width: "100%" }} onClick={openStaff}>Staff attendance</button>}
             <div className={`vd-avatar-grid count-${avatars.length}`}>
               {avatars.map((avatar) => (
                 <div 
