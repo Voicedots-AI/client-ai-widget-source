@@ -2,18 +2,22 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { WidgetPortal } from '../components/WidgetPortal';
 import styles from '../styles/staff-attendance.css?inline';
 
+type SelfAttendance = { attendance_date: string; checked_in_at: string | null };
 type Class = { id: string; name: string; subject: string };
 type Status = 'present' | 'absent' | 'od' | 'unmarked';
 type Register = { revision: number; record: { updated_at: string } | null; students: { id: string; full_name: string; roll_number: string; status: Status }[] };
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
-export default function StaffAttendanceModal({ workspace, onClose }: { workspace: string; onClose: () => void }) {
+export default function StaffAttendanceModal({ workspace, onClose, voiceMode = false, voiceConnected = false, onVerified, attendanceRevision = 0 }: { workspace: string; onClose: () => void; voiceMode?: boolean; voiceConnected?: boolean; onVerified?: (token: string) => void; attendanceRevision?: number }) {
   const base = `https://student-api.voicedots.io/api/widget/attendance/${encodeURIComponent(workspace)}`;
   const [token, setToken] = useState('');
   const tokenRef = useRef('');
+  const [selfAttendance, setSelfAttendance] = useState<SelfAttendance | null>(null);
+  const [selfError, setSelfError] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [camera, setCamera] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const alive = useRef(true);
@@ -41,7 +45,7 @@ export default function StaffAttendanceModal({ workspace, onClose }: { workspace
     }
     return data;
   };
-  const stopCamera = () => { stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; setCamera(false); };
+  const stopCamera = () => { stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; setCamera(false); setCameraReady(false); };
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -69,6 +73,8 @@ export default function StaffAttendanceModal({ workspace, onClose }: { workspace
       const session = await request<{ token: string; full_name: string }>('/login', { email, photo: canvas.toDataURL('image/jpeg', .9) });
       if (!alive.current) { void fetch(base + '/logout', { method: 'POST', headers: { Authorization: `Bearer ${session.token}` } }).catch(() => {}); return; }
       tokenRef.current = session.token; setToken(session.token); setName(session.full_name); stopCamera();
+      if (voiceMode) onVerified?.(session.token);
+      if (voiceMode) return;
       const result = await request<{ classes: Class[] }>('/classes'); setClasses(result.classes); setClassId(result.classes[0]?.id || '');
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
@@ -80,6 +86,19 @@ export default function StaffAttendanceModal({ workspace, onClose }: { workspace
       .catch(e => { if (!controller.signal.aborted) setError(e.message); });
     return () => controller.abort();
   }, [token, classId, day, period, reload]);
+  const loadSelf = async () => {
+    setSelfError('');
+    try { const data = await request<SelfAttendance>('/self'); if (alive.current) setSelfAttendance(data); }
+    catch (e) { if (alive.current) setSelfError((e as Error).message); }
+  };
+  useEffect(() => { if (token) void loadSelf(); else setSelfAttendance(null); }, [token, attendanceRevision]);
+  useEffect(() => { if (voiceMode && !voiceConnected) onClose(); }, [voiceMode, voiceConnected]);
+  const markSelf = async () => {
+    setBusy(true); setSelfError('');
+    try { const data = await request<SelfAttendance>('/self', {}); if (alive.current) setSelfAttendance(data); }
+    catch (e) { if (alive.current) setSelfError((e as Error).message); }
+    finally { if (alive.current) setBusy(false); }
+  };
   const save = async (spoken?: string) => {
     if (!register) return;
     setBusy(true); setError(''); setNotice('');
@@ -112,17 +131,31 @@ export default function StaffAttendanceModal({ workspace, onClose }: { workspace
   };
   const frozen = busy || listening;
   const counts = (value: Status) => Object.values(marks).filter(s => s === value).length;
-  return <WidgetPortal><style>{styles}</style><div className="vd-staff-overlay"><section className="vd-staff-panel" role="dialog" aria-modal="true" aria-labelledby="vd-staff-title">
-    <header><div><small>DSCET · Staff workspace</small><h2 id="vd-staff-title">Attendance</h2></div><button onClick={onClose} aria-label="Close staff attendance">✕</button></header>
+  // Keep the session lifecycle mounted while returning focus to the voice call.
+  if (voiceMode && token) return null;
+  return <WidgetPortal><style>{styles}</style><div className="vd-staff-overlay"><section className="vd-staff-panel" style={voiceMode ? { maxWidth: "440px" } : undefined} role="dialog" aria-modal="true" aria-labelledby="vd-staff-title">
+    <header><div><small>{voiceMode ? "YOUR STAFF SPACE" : "DSCET · Staff workspace"}</small><h2 id="vd-staff-title">{voiceMode ? (camera ? "Verify your photo." : "Sign in with your face.") : "Attendance"}</h2></div><button onClick={onClose} aria-label="Close staff attendance">✕</button></header>
     {error && <p className="vd-staff-error" role="alert">{error}</p>}{notice && <p className="vd-staff-success" role="status">{notice}</p>}
-    {!token ? <form onSubmit={e => { e.preventDefault(); void login(); }}>
-      <h3>Verify your face to continue</h3><p>Your administrator adds your staff name, email, photo and classes in the client dashboard.</p>
-      <label>Staff email<input type="email" required value={email} onInput={e => setEmail(e.currentTarget.value)} autoComplete="email" disabled={busy} /></label>
-      {camera ? <video ref={video} autoPlay playsInline muted /> : <div className="vd-staff-camera">Webcam verification</div>}
+    {!token ? <form onSubmit={e => { e.preventDefault(); if (camera) void login(); else void startCamera(); }}>
+      <p>{voiceMode ? (camera ? "One more step to verify your identity. Your AI conversation stays connected." : "Enter your email, then capture a camera photo to sign in.") : "Your administrator adds your staff name, email, photo and classes in the client dashboard."}</p>
+      <label>Email<input type="email" required value={email} onInput={e => setEmail(e.currentTarget.value)} autoComplete="email" disabled={busy} /></label>
+      {camera && <video ref={video} autoPlay playsInline muted aria-label="Camera preview" onCanPlay={() => setCameraReady(true)} onEmptied={() => setCameraReady(false)} />}
       <p className="vd-staff-hint">Face the camera with one face clearly visible. A frame from this feed is compared with your saved staff photo.</p>
-      {camera ? <button className="vd-staff-primary" type="submit" disabled={busy || !email}>{busy ? 'Verifying photo…' : 'Capture frame & sign in'}</button> : <button className="vd-staff-primary" type="button" disabled={busy} onClick={startCamera}>Enable webcam</button>}
+      {camera ? <button className="vd-staff-primary" type="submit" disabled={busy || !email || !cameraReady}>{busy ? 'Verifying photo…' : 'Capture and verify'}</button> : <button className="vd-staff-primary" type="submit" disabled={busy || !email}>Open camera</button>}
+      {camera && <button type="button" disabled={busy} onClick={() => { stopCamera(); setError(''); }}>Back to sign in</button>}
     </form> : <>
       <p className="vd-staff-verified">✓ Photo verified · {name}</p>
+      <section className="vd-staff-voice" aria-label="My attendance">
+        <h3>My attendance</h3>
+        <p>Mark your own attendance for today. Date and time use India Standard Time.</p>
+        {selfError && <p role="alert" className="vd-staff-error">{selfError}</p>}
+        {selfAttendance?.checked_in_at
+          ? <p role="status" className="vd-staff-verified">Present · {selfAttendance.attendance_date} · {new Date(selfAttendance.checked_in_at).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p>
+          : voiceMode ? <p>Keep speaking with the AI. When it asks, say “Yes, mark my attendance.” Your saved confirmation will appear here.</p> : <button className="vd-staff-primary" disabled={busy || !selfAttendance} onClick={() => void markSelf()}>{busy ? 'Saving…' : 'Mark my attendance'}</button>}
+        <button disabled={busy} onClick={() => void loadSelf()}>Refresh my attendance</button>
+      </section>
+      {!voiceMode && <>
+      <h3>Student class attendance</h3>
       {!classes.length ? <p>No classes are assigned yet. Ask your administrator to assign your classes in the client dashboard.</p> : <>
         <label>Class<select value={classId} disabled={frozen} onChange={e => setClassId(e.currentTarget.value)}>{classes.map(c => <option key={c.id} value={c.id}>{c.name}{c.subject ? ` · ${c.subject}` : ''}</option>)}</select></label>
         <div className="vd-staff-fields"><label>Date<input type="date" value={day} disabled={frozen} onChange={e => setDay(e.currentTarget.value)} /></label><label>Hour / period<select value={period} disabled={frozen} onChange={e => setPeriod(e.currentTarget.value)}>{Array.from({ length: 12 }, (_, i) => <option key={i} value={i + 1}>Hour {i + 1}</option>)}</select></label></div>
@@ -138,6 +171,7 @@ export default function StaffAttendanceModal({ workspace, onClose }: { workspace
           <p className="vd-staff-hint">{register.record ? `Saved ${new Date(register.record.updated_at).toLocaleString()}. Visible in the client dashboard.` : 'No attendance saved for this period yet.'}</p>
         </>}
         <button disabled={frozen} onClick={() => setReload(n => n + 1)}>Reload register</button>
+      </>}
       </>}
       <p className="vd-staff-hint">Closing this panel signs you out. Face verification expires after 30 minutes.</p>
     </>}

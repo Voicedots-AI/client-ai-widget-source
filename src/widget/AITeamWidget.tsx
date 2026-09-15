@@ -35,10 +35,11 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
   }
   const studentConversation = conversation as any;
   const [staffOpen, setStaffOpen] = useState(false);
-  const openStaff = () => { autoCloseSpent.current = true; conversation.stop(); setStaffOpen(true); };
+  const [staffVoice, setStaffVoice] = useState(false);
+  const openStaff = () => { autoCloseSpent.current = true; setStaffVoice(false); conversation.stop(); setStaffOpen(true); };
   useEffect(() => {
     if (attendanceWorkspace && studentConversation.staffAttendanceOpen) {
-      openStaff(); studentConversation.closeStaffAttendance();
+      autoCloseSpent.current = true; setStaffVoice(true); setStaffOpen(true); studentConversation.closeStaffAttendance();
     }
   }, [attendanceWorkspace, studentConversation.staffAttendanceOpen]);
 
@@ -147,7 +148,7 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
         />
       )}
 
-      {staffOpen && attendanceWorkspace && <StaffAttendanceModal workspace={attendanceWorkspace} onClose={() => setStaffOpen(false)} />}
+      {staffOpen && attendanceWorkspace && <StaffAttendanceModal workspace={attendanceWorkspace} voiceMode={staffVoice} voiceConnected={conversation.isConnected} onVerified={studentConversation.staffVerified} attendanceRevision={studentConversation.staffAttendanceRevision} onClose={() => { setStaffOpen(false); if (staffVoice) studentConversation.staffClosed?.(); }} />}
       {/* ================= MAIN WIDGET ================= */}
       {!minimized && (
         <div className="vd-main-card">
