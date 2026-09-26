@@ -12,6 +12,10 @@
 .vd-student-close { position: absolute; right: 18px; top: 15px; border: 0; background: transparent; color: #64748b; font-size: 28px; cursor: pointer; }
 .vd-student-primary { width: 100%; min-height: 44px; margin-top: 20px; border: 0; border-radius: 999px; background: #7c3aed; color: #fff; font-weight: 700; cursor: pointer; }
 .vd-student-primary:disabled { opacity: .65; cursor: wait; }
+.vd-student-secondary { display: block; width: 100%; min-height: 42px; margin-top: 10px; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #334155; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.vd-student-secondary:hover { border-color: #7c3aed; color: #6d28d9; }
+.vd-student-secondary:disabled { opacity: .65; cursor: wait; }
+.vd-student-notice { margin-top: 12px; padding: 10px 12px; border-radius: 9px; background: #f5f3ff; color: #5b21b6; font-size: 13px; }
 .vd-student-error { margin-top: 12px; padding: 10px 12px; border-radius: 9px; background: #fef2f2; color: #b91c1c; font-size: 13px; }
 .vd-student-results { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
 .vd-student-row { display: grid; grid-template-columns: minmax(130px,1fr) minmax(100px,1fr); gap: 12px; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }

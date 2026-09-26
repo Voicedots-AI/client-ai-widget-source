@@ -135,7 +135,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     const [loginOpen, setLoginOpen] = useState(false);
     const [staffAttendanceOpen, setStaffAttendanceOpen] = useState(false);
     const [staffAttendanceRevision, setStaffAttendanceRevision] = useState(0);
-    const [studentFlow, setStudentFlow] = useState<any>({ open: false, intent: "fee", period: "today" });
+    const [studentFlow, setStudentFlow] = useState<any>({ open: false, intent: "fee", period: "today", semester: null });
 
     // DATA COLLECTION STATE (same semantics as the LiveKit controller)
     const [dataCollectionOpen, setDataCollectionOpen] = useState(false);
@@ -210,7 +210,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
 
     const cleanup = () => {
         studentRecordSessions.delete(agentIdRef.current);
-        setStudentFlow({ open: false, intent: "fee", period: "today" });
+        setStudentFlow({ open: false, intent: "fee", period: "today", semester: null });
         if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.onerror = null; }
         stopPlayback();
         wsRef.current?.close(); wsRef.current = null;
@@ -311,7 +311,11 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 ? msg.args.intent : "fee";
             const period = ["today", "week", "month", "semester"].includes(msg.args?.period)
                 ? msg.args.period : "today";
-            setStudentFlow({ open: true, intent, period });
+            const rawSemester = msg.args?.semester;
+            const semester = rawSemester == null ? null
+                : typeof rawSemester === "number" && Number.isInteger(rawSemester) ? rawSemester
+                : typeof rawSemester === "string" && /^\s*\d+\s*$/.test(rawSemester) ? Number(rawSemester) : 0;
+            setStudentFlow({ open: true, intent, period, semester });
             if ((studentRecordSessions.get(agentIdRef.current) || 0) > Date.now()) {
                 sendJSON({ type: "LOGIN_RESULT", status: "success", intent });
             }
@@ -469,9 +473,10 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 sendJSON({ type: "LOGIN_RESULT", status: "cancelled", intent: studentFlow.intent });
             }
         },
-        studentLoginSuccess: () => {
-            studentRecordSessions.set(agentIdRef.current, Date.now() + 30 * 60 * 1000);
+        studentLoginSuccess: (token: string, expiresIn = 1800) => {
+            studentRecordSessions.set(agentIdRef.current, Date.now() + Math.min(1800, Number(expiresIn) || 1800) * 1000);
             setStudentFlow((flow: any) => ({ ...flow }));
+            sendJSON({ type: "STUDENT_SESSION", token });
             sendJSON({ type: "LOGIN_RESULT", status: "success", intent: studentFlow.intent });
         },
         studentResult: (status: string, identifier: string) => sendJSON({
