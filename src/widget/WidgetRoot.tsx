@@ -82,6 +82,7 @@ export default function WidgetRoot({ config }: { config: string }) {
           agentId={parsedConfig.agentId} 
           studentClient={parsedConfig.studentClient}
           attendanceWorkspace={parsedConfig.attendanceWorkspace}
+          openStaffOnLoad={parsedConfig.openStaffOnLoad === true}
           avatars={parsedConfig.avatars}
           logo={parsedConfig.logo}
           pos={parsedConfig.pos || 'right'} 

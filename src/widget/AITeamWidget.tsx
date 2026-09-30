@@ -11,7 +11,7 @@ import StudentRecordModal from "../modals/StudentRecordModal";
 import type { Avatar } from "../features/types";
 
 
-export default function AITeamWidget({ title, brandName, agentId, studentClient, attendanceWorkspace, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, studentClient?: "cmrtc" | "demo", attendanceWorkspace?: string, avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
+export default function AITeamWidget({ title, brandName, agentId, studentClient, attendanceWorkspace, openStaffOnLoad = false, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, studentClient?: "cmrtc" | "demo", attendanceWorkspace?: string, openStaffOnLoad?: boolean, avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
   // The collapsed pill shows the client's own name; falls back to ours.
   const pillName = brandName || "VoiceDots";
   const [minimized, setMinimized] = useState(mini);
@@ -37,6 +37,13 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
   const [staffOpen, setStaffOpen] = useState(false);
   const [staffVoice, setStaffVoice] = useState(false);
   const openStaff = () => { autoCloseSpent.current = true; setStaffVoice(false); conversation.stop(); setStaffOpen(true); };
+  const openedStaffOnLoad = useRef(false);
+  useEffect(() => {
+    if (openStaffOnLoad && attendanceWorkspace && !openedStaffOnLoad.current) {
+      openedStaffOnLoad.current = true;
+      openStaff();
+    }
+  }, [openStaffOnLoad, attendanceWorkspace]);
   useEffect(() => {
     if (attendanceWorkspace && studentConversation.staffAttendanceOpen) {
       autoCloseSpent.current = true; setStaffVoice(true); setStaffOpen(true); studentConversation.closeStaffAttendance();
