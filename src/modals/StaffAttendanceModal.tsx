@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { WidgetPortal } from '../components/WidgetPortal';
 import styles from '../styles/staff-attendance.css?inline';
+import StaffStudentWorkspace from './StaffStudentWorkspace';
 
 type SelfAttendance = { attendance_date: string; checked_in_at: string | null };
 type Class = { id: string; name: string; subject: string };
@@ -26,6 +27,7 @@ export default function StaffAttendanceModal({ workspace, onClose, voiceMode = f
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [view, setView] = useState<'attendance' | 'students'>('attendance');
   const [classes, setClasses] = useState<Class[]>([]);
   const [classId, setClassId] = useState('');
   const [day, setDay] = useState(today);
@@ -133,8 +135,8 @@ export default function StaffAttendanceModal({ workspace, onClose, voiceMode = f
   const counts = (value: Status) => Object.values(marks).filter(s => s === value).length;
   // Keep the session lifecycle mounted while returning focus to the voice call.
   if (voiceMode && token) return null;
-  return <WidgetPortal><style>{styles}</style><div className="vd-staff-overlay"><section className="vd-staff-panel" style={voiceMode ? { maxWidth: "440px" } : undefined} role="dialog" aria-modal="true" aria-labelledby="vd-staff-title">
-    <header><div><small>{voiceMode ? "YOUR STAFF SPACE" : "DSCET · Staff workspace"}</small><h2 id="vd-staff-title">{voiceMode ? (camera ? "Verify your photo." : "Sign in with your face.") : "Attendance"}</h2></div><button onClick={onClose} aria-label="Close staff attendance">✕</button></header>
+  return <WidgetPortal><style>{styles}</style><div className="vd-staff-overlay"><section className="vd-staff-panel" style={voiceMode ? { maxWidth: "440px" } : view === "students" ? { maxWidth: "980px" } : undefined} role="dialog" aria-modal="true" aria-labelledby="vd-staff-title">
+    <header><div><small>{voiceMode ? "YOUR STAFF SPACE" : "DSCET · Staff workspace"}</small><h2 id="vd-staff-title">{voiceMode ? (camera ? "Verify your photo." : "Sign in with your face.") : "Staff workspace"}</h2></div><button onClick={onClose} aria-label="Close staff attendance">✕</button></header>
     {error && <p className="vd-staff-error" role="alert">{error}</p>}{notice && <p className="vd-staff-success" role="status">{notice}</p>}
     {!token ? <form onSubmit={e => { e.preventDefault(); if (camera) void login(); else void startCamera(); }}>
       <p>{voiceMode ? (camera ? "One more step to verify your identity. Your AI conversation stays connected." : "Enter your email, then capture a camera photo to sign in.") : "Your administrator adds your staff name, email, photo and classes in the client dashboard."}</p>
@@ -154,7 +156,9 @@ export default function StaffAttendanceModal({ workspace, onClose, voiceMode = f
           : voiceMode ? <p>Keep speaking with the AI. When it asks, say “Yes, mark my attendance.” Your saved confirmation will appear here.</p> : <button className="vd-staff-primary" disabled={busy || !selfAttendance} onClick={() => void markSelf()}>{busy ? 'Saving…' : 'Mark my attendance'}</button>}
         <button disabled={busy} onClick={() => void loadSelf()}>Refresh my attendance</button>
       </section>
-      {!voiceMode && <>
+      {!voiceMode && <nav className="vd-staff-tabs" aria-label="Staff workspace sections"><button type="button" aria-pressed={view === 'attendance'} onClick={() => setView('attendance')}>Class attendance</button><button type="button" aria-pressed={view === 'students'} onClick={() => setView('students')}>Students, marks & fees</button></nav>}
+      {!voiceMode && view === 'students' && <StaffStudentWorkspace base={base} token={token} classes={classes} onRosterChanged={() => setReload(n => n + 1)} onUnauthorized={() => { tokenRef.current = ''; setToken(''); setRegister(null); }} />}
+      {!voiceMode && view === 'attendance' && <>
       <h3>Student class attendance</h3>
       {!classes.length ? <p>No classes are assigned yet. Ask your administrator to assign your classes in the client dashboard.</p> : <>
         <label>Class<select value={classId} disabled={frozen} onChange={e => setClassId(e.currentTarget.value)}>{classes.map(c => <option key={c.id} value={c.id}>{c.name}{c.subject ? ` · ${c.subject}` : ''}</option>)}</select></label>
