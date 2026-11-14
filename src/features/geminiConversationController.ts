@@ -367,7 +367,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         setErrorCode(null);
         if (accessRef.current.retryAt > Date.now()) {
             setErrorCode("IP_RATE_LIMIT");
-            setError("Both connections are used. Please wait for the retry countdown.");
+            setError("The connection limit has been reached. Please wait for the retry countdown.");
             setIsConnecting(false); startingRef.current = false;
             return;
         }

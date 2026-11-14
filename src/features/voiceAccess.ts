@@ -3,7 +3,7 @@ export type VoiceAccess = {
   remaining: number | null; retryAt: number; sessionDeadline?: number;
 };
 export const DEFAULT_VOICE_ACCESS: VoiceAccess = {
-  sessionSeconds: 90, limit: 2, windowSeconds: 3600, remaining: null, retryAt: 0,
+  sessionSeconds: 90, limit: 5, windowSeconds: 3600, remaining: null, retryAt: 0,
 };
 export function formatClock(seconds: number): string {
   const value = Math.max(0, Math.ceil(seconds));

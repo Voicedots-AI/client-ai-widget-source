@@ -267,7 +267,7 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
               )}
             </div>
             {showQuotaNotice && <p className="vd-quota-toast" role="status" aria-live="polite">
-              You have used both connections for this hour. Try again in {formatClock(retrySeconds)}.
+              You have reached the connection limit for this hour. Try again in {formatClock(retrySeconds)}.
             </p>}
           </div>
         </div>
