@@ -1,6 +1,6 @@
 // Shared only within this page and agent; never store demo credentials.
 const studentRecordSessions = new Map<string, number>();
-import { useCallback, useRef, useState } from "preact/compat";
+import { useCallback, useEffect, useRef, useState } from "preact/compat";
 
 /**
  * Gemini Live voice controller (multi-tenant).
@@ -123,7 +123,38 @@ const workletUrl = () => URL.createObjectURL(new Blob([WORKLET_SRC], { type: "ap
 
 type Avatar = { name: string; role?: string; image?: string };
 
+import { accessUrl, DEFAULT_VOICE_ACCESS, parseVoiceAccess } from "./voiceAccess";
+
 export function useGeminiConversationController(wsBaseUrl?: string) {
+    const [access, setAccess] = useState(DEFAULT_VOICE_ACCESS);
+    const accessRef = useRef(DEFAULT_VOICE_ACCESS);
+    const endpoint = accessUrl(wsBaseUrl || DEFAULT_WS_URL);
+    const storageKey = "vd-voice-retry:" + endpoint;
+    const updateAccess = (data: any) => {
+        const next = { ...accessRef.current, ...parseVoiceAccess(data) };
+        accessRef.current = next; setAccess(next);
+        try { localStorage.setItem(storageKey, String(next.retryAt)); } catch { /* storage optional */ }
+    };
+    const refreshAccess = useCallback(async () => {
+        try {
+            const response = await fetch(endpoint, { cache: "no-store" });
+            if (response.ok) updateAccess(await response.json());
+        } catch { /* Backend remains authoritative on connect. */ }
+    }, [endpoint]);
+    useEffect(() => {
+        try {
+            const retryAt = Number(localStorage.getItem(storageKey));
+            if (Number.isFinite(retryAt) && retryAt > Date.now()) {
+                accessRef.current = { ...accessRef.current, retryAt };
+                setAccess(accessRef.current);
+            }
+        } catch { /* storage optional */ }
+        void refreshAccess();
+        const refresh = () => { if (!document.hidden) void refreshAccess(); };
+        const timer = window.setInterval(refresh, 15000);
+        window.addEventListener("focus", refresh);
+        return () => { clearInterval(timer); window.removeEventListener("focus", refresh); };
+    }, [refreshAccess]);
     const [micMuted, setMicMuted] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -332,7 +363,14 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         leadCapturedRef.current = false;
         setIsConnecting(true);
         setError(null);
+        if (accessRef.current.retryAt > Date.now()) {
+            setError("Both connections are used. Please wait for the retry countdown.");
+            setIsConnecting(false); startingRef.current = false;
+            return;
+        }
 
+        accessRef.current = { ...accessRef.current, sessionDeadline: undefined };
+        setAccess(accessRef.current);
         try {
             // Audio contexts MUST be created (and resumed) inside the click
             // gesture — creating them later in ws.onopen leaves them suspended
@@ -400,7 +438,9 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 if (event.data instanceof ArrayBuffer) { playAudioChunk(event.data); return; }
                 try {
                     const msg = JSON.parse(event.data);
-                    if (msg.type === "TOOL_CALL") {
+                    if (msg.type === "SessionLimits") {
+                        updateAccess(msg);
+                    } else if (msg.type === "TOOL_CALL") {
                         await handleToolCall(msg);
                     } else if (msg.type === "UserStartedSpeaking" ||
                                msg.type === "FlushAgentAudio" ||
@@ -413,6 +453,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                         setIsSpeaking(false);
                     } else if (msg.type === "Error") {
                         console.error("Agent error:", msg);
+                        if (msg.code === "IP_RATE_LIMIT") updateAccess({ ...msg, remaining: 0 });
                         setError(msg.description || "Agent error");
                     } else if (msg.type === "LeadValidationError") {
                         setError(msg.description || "Please check your contact details");
@@ -423,7 +464,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 }
             };
 
-            ws.onclose = () => cleanup();
+            ws.onclose = () => { cleanup(); void refreshAccess(); };
             ws.onerror = () => { setError("Connection failed"); cleanup(); };
         } catch (err: any) {
             console.error("Sarvam connection error:", err);
@@ -438,6 +479,8 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     };
 
     return {
+        access,
+        refreshAccess,
         start,
         stop,
         isConnected,
