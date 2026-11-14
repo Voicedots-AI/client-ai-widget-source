@@ -541,3 +541,9 @@ CSS
   .vd-lottie-container { max-width: 120px; }
   .vd-controls { padding: 5px 16px 5px 16px; }
 }
+
+.vd-access-policy { display: flex; flex-direction: column; gap: 4px; margin: 12px; padding: 10px 12px; border-radius: 10px; background: #f4f2ff; color: #34304b; text-align: center; font-size: 12px; line-height: 1.5; }
+.vd-access-policy strong { color: #6b348b; font-size: 13px; font-variant-numeric: tabular-nums; }
+.vd-access-policy small { color: #625d75; font-size: 10px; }
+.vd-access-error { color: #9f2538; background: #fff0f2; border-radius: 8px; margin: 8px 12px; padding: 8px; font-size: 12px; text-align: center; }
+.vd-btn-primary:disabled { opacity: .65; cursor: not-allowed; }

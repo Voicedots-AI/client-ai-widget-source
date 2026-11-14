@@ -9,6 +9,7 @@ import VoicedotsDataCollectionModal from "../modals/VoicedotsDataCollectionModal
 import StaffAttendanceModal from "../modals/StaffAttendanceModal";
 import StudentRecordModal from "../modals/StudentRecordModal";
 import type { Avatar } from "../features/types";
+import { DEFAULT_VOICE_ACCESS, formatClock } from "../features/voiceAccess";
 
 
 export default function AITeamWidget({ title, brandName, agentId, studentClient, attendanceWorkspace, openStaffOnLoad = false, avatars, logo, pos, mini, autoCloseSeconds = 0, msg, pipeline, wsUrl }: { title: string, brandName?: string, agentId: string, studentClient?: "cmrtc" | "demo", attendanceWorkspace?: string, openStaffOnLoad?: boolean, avatars: Avatar[], logo: string, pos: string, mini: boolean, autoCloseSeconds?: number, msg: string, pipeline?: string, wsUrl?: string }) {
@@ -51,7 +52,17 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
   }, [attendanceWorkspace, studentConversation.staffAttendanceOpen]);
 
   const avatarRefs = useRef<Record<string, AvatarHandle | null>>({});
-  const [timeLeft, setTimeLeft] = useState(360);
+  const isWebVoice = pipeline === "gemini" || pipeline === "websocket" || pipeline === "sarvam";
+  const access = studentConversation.access || DEFAULT_VOICE_ACCESS;
+  const [now, setNow] = useState(Date.now());
+  const [timeLeft, setTimeLeft] = useState(isWebVoice ? 90 : 360);
+  const [fallbackDeadline, setFallbackDeadline] = useState(0);
+  const retrySeconds = Math.max(0, Math.ceil((access.retryAt - now) / 1000));
+  useEffect(() => {
+    if (!isWebVoice) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [isWebVoice]);
 
   // Start/Stop Logic
   const startConversation = () => {
@@ -90,24 +101,27 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
     return () => clearTimeout(timer);
   }, [autoCloseSeconds, minimized, conversation.isConnected, conversation.isConnecting]);
 
-  // Timer Logic
+  // Use elapsed wall time so background tabs do not extend the countdown.
   useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | undefined;
-    if (conversation.isConnected) {
-      setTimeLeft(360); // Reset to 6 mins on every new connection
-      timer = setInterval(() => {
-        setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-    }
-
+    if (conversation.isConnected) setFallbackDeadline(Date.now() + (isWebVoice ? 90 : 360) * 1000);
+    else setFallbackDeadline(0);
+  }, [conversation.isConnected, isWebVoice]);
+  useEffect(() => {
+    if (!conversation.isConnected || !fallbackDeadline) return;
+    const deadline = isWebVoice && access.sessionDeadline ? access.sessionDeadline : fallbackDeadline;
+    const update = () => setTimeLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
+    update();
+    const timer = window.setInterval(update, 250);
     return () => clearInterval(timer);
-  }, [conversation.isConnected]);
+  }, [conversation.isConnected, fallbackDeadline, access.sessionDeadline, isWebVoice]);
 
   useEffect(() => {
-    if (conversation.isConnected && timeLeft === 0) {
-      conversation.stop();
-    }
-  }, [timeLeft, conversation.isConnected]);
+    const deadline = isWebVoice && access.sessionDeadline ? access.sessionDeadline : fallbackDeadline;
+    if (conversation.isConnected && deadline > 0 && deadline <= Date.now()) conversation.stop();
+  }, [timeLeft, conversation.isConnected, fallbackDeadline, access.sessionDeadline, isWebVoice]);
+  useEffect(() => {
+    if (isWebVoice && access.retryAt > 0 && retrySeconds === 0) void studentConversation.refreshAccess?.();
+  }, [retrySeconds]);
 
   return (
     <div className={`vd-widget-container vd-pos-${pos}`}>
@@ -163,7 +177,7 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
             <div className="vd-title-group">
               <h3>{title}</h3>
               {conversation.isConnected && (
-                <span className="vd-timer">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                <span className="vd-timer">{formatClock(timeLeft)}</span>
               )}
             </div>
             <button onClick={closeWidget} className="vd-icon-btn">
@@ -198,10 +212,17 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
               ))}
             </div>
 
+            {isWebVoice && <div className="vd-access-policy" role="status" aria-live="polite">
+              <span>1:30 per session · 2 connections per hour</span>
+              {retrySeconds > 0 ? <strong>Available again in {formatClock(retrySeconds)}</strong>
+                : <span>{access.remaining == null ? "Availability checked when you connect" : `${access.remaining} connection${access.remaining === 1 ? "" : "s"} remaining`}</span>}
+              <small>Shared by devices on the same public IP.</small>
+            </div>}
+            {conversation.error && <p className="vd-access-error" role="alert">{conversation.error}</p>}
             <div className="vd-controls">
               {!conversation.isConnected ? (
                 <>
-                  <button className="vd-btn-primary" onClick={startConversation} disabled={conversation.isConnecting}>
+                  <button className="vd-btn-primary" onClick={startConversation} disabled={conversation.isConnecting || (isWebVoice && retrySeconds > 0)}>
                     {conversation.isConnecting ? (
                       <>
                         <div className="vd-btn-icon-wrapper vd-sliding">
