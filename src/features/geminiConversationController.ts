@@ -163,6 +163,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     const startingRef = useRef(false);
     const [activeAvatar, setActiveAvatar] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [errorCode, setErrorCode] = useState<string | null>(null);
     const [loginOpen, setLoginOpen] = useState(false);
     const [staffAttendanceOpen, setStaffAttendanceOpen] = useState(false);
     const [staffAttendanceRevision, setStaffAttendanceRevision] = useState(0);
@@ -363,7 +364,9 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         leadCapturedRef.current = false;
         setIsConnecting(true);
         setError(null);
+        setErrorCode(null);
         if (accessRef.current.retryAt > Date.now()) {
+            setErrorCode("IP_RATE_LIMIT");
             setError("Both connections are used. Please wait for the retry countdown.");
             setIsConnecting(false); startingRef.current = false;
             return;
@@ -453,6 +456,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                         setIsSpeaking(false);
                     } else if (msg.type === "Error") {
                         console.error("Agent error:", msg);
+                        setErrorCode(msg.code || "AGENT_ERROR");
                         if (msg.code === "IP_RATE_LIMIT") updateAccess({ ...msg, remaining: 0 });
                         setError(msg.description || "Agent error");
                     } else if (msg.type === "LeadValidationError") {
@@ -465,7 +469,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             };
 
             ws.onclose = () => { cleanup(); void refreshAccess(); };
-            ws.onerror = () => { setError("Connection failed"); cleanup(); };
+            ws.onerror = () => { setErrorCode("CONNECTION_FAILED"); setError("Connection failed"); cleanup(); };
         } catch (err: any) {
             console.error("Sarvam connection error:", err);
             setError(err?.message || "Failed to start conversation");
@@ -491,6 +495,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         toggleMic,
         micMuted,
         error,
+        errorCode,
         setError,
         loginOpen,
         setLoginOpen,

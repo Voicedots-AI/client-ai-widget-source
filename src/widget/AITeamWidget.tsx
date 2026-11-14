@@ -123,6 +123,18 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
     if (isWebVoice && access.retryAt > 0 && retrySeconds === 0) void studentConversation.refreshAccess?.();
   }, [retrySeconds]);
 
+  const quotaExhausted = isWebVoice && retrySeconds > 0;
+  const [showQuotaNotice, setShowQuotaNotice] = useState(false);
+  useEffect(() => {
+    if (!quotaExhausted || conversation.isConnected || conversation.isConnecting || minimized) {
+      setShowQuotaNotice(false);
+      return;
+    }
+    setShowQuotaNotice(true);
+    const timer = window.setTimeout(() => setShowQuotaNotice(false), 10000);
+    return () => clearTimeout(timer);
+  }, [quotaExhausted, conversation.isConnected, conversation.isConnecting, minimized]);
+
   return (
     <div className={`vd-widget-container vd-pos-${pos}`}>
       {/* ================= MODALS ================= */}
@@ -212,17 +224,12 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
               ))}
             </div>
 
-            {isWebVoice && <div className="vd-access-policy" role="status" aria-live="polite">
-              <span>1:30 per session · 2 connections per hour</span>
-              {retrySeconds > 0 ? <strong>Available again in {formatClock(retrySeconds)}</strong>
-                : <span>{access.remaining == null ? "Availability checked when you connect" : `${access.remaining} connection${access.remaining === 1 ? "" : "s"} remaining`}</span>}
-              <small>Shared by devices on the same public IP.</small>
-            </div>}
-            {conversation.error && <p className="vd-access-error" role="alert">{conversation.error}</p>}
+
+            {conversation.error && studentConversation.errorCode !== "IP_RATE_LIMIT" && <p className="vd-access-error" role="alert">{conversation.error}</p>}
             <div className="vd-controls">
               {!conversation.isConnected ? (
                 <>
-                  <button className="vd-btn-primary" onClick={startConversation} disabled={conversation.isConnecting || (isWebVoice && retrySeconds > 0)}>
+                  <button className="vd-btn-primary" onClick={startConversation} disabled={conversation.isConnecting || quotaExhausted} title={quotaExhausted ? `Available again in ${formatClock(retrySeconds)}` : undefined}>
                     {conversation.isConnecting ? (
                       <>
                         <div className="vd-btn-icon-wrapper vd-sliding">
@@ -259,6 +266,9 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
                 </>
               )}
             </div>
+            {showQuotaNotice && <p className="vd-quota-toast" role="status" aria-live="polite">
+              You have used both connections for this hour. Try again in {formatClock(retrySeconds)}.
+            </p>}
           </div>
         </div>
       )}
