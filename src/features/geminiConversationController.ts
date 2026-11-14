@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "preact/compat";
  * Gemini Live voice controller (multi-tenant).
  *
  * Same returned interface as useVoicedotsConversationController — only the
- * transport differs: a WebSocket to the Sarvam pipeline backend
+ * transport differs: a WebSocket to the Gemini Live voice backend
  * (wss://voice.voicedots.io/ws?agent=<agentId>) instead of a LiveKit room.
  * Mic PCM streams up (16k int16), agent PCM streams back (24k int16), and the
  * backend speaks the SAME {type:"TOOL_CALL", function, args} protocol.
@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "preact/compat";
 const DEFAULT_WS_URL = "wss://voice.voicedots.io/ws";
 const MIC_SAMPLE_RATE = 16000;
 const AGENT_SAMPLE_RATE = 24000;
+const IDLE_TIMEOUT_MS = 30_000;
 
 const WORKLET_SRC = `
 class PcmPlayer extends AudioWorkletProcessor {
@@ -161,6 +162,9 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     const [isSpeaking, setIsSpeaking] = useState(false);
 
     const startingRef = useRef(false);
+    const connectionGeneration = useRef(0);
+    const idleTimer = useRef<number | undefined>(undefined);
+    const lastAudioAt = useRef(0);
     const [activeAvatar, setActiveAvatar] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -240,12 +244,24 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         playerNodeRef.current?.port.postMessage("clear");
     };
 
-    const cleanup = () => {
+    const cleanup = useCallback(() => {
+        connectionGeneration.current += 1;
+        window.clearInterval(idleTimer.current);
         studentRecordSessions.delete(agentIdRef.current);
         setStudentFlow({ open: false, intent: "fee", period: "today", semester: null });
-        if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.onerror = null; }
-        stopPlayback();
-        wsRef.current?.close(); wsRef.current = null;
+        const ws = wsRef.current;
+        wsRef.current = null;
+        if (ws) {
+            ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null;
+            try {
+                if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "stop" }));
+            } catch {
+                // The peer can disconnect between checking readyState and sending.
+            } finally {
+                ws.close();
+            }
+        }
+        playerNodeRef.current?.port.postMessage("clear");
         streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null;
         micCtxRef.current?.close().catch(() => {}); micCtxRef.current = null;
         playCtxRef.current?.close().catch(() => {}); playCtxRef.current = null;
@@ -253,9 +269,19 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
         playDestRef.current = null;
         playerNodeRef.current = null; micNodeRef.current = null;
         startingRef.current = false;
+        micMutedRef.current = false;
+        setMicMuted(false);
         setIsConnected(false); setIsSpeaking(false); setIsConnecting(false);
         setActiveAvatar(null);
-    };
+    }, []);
+
+    useEffect(() => {
+        window.addEventListener("pagehide", cleanup);
+        return () => {
+            window.removeEventListener("pagehide", cleanup);
+            cleanup();
+        };
+    }, [cleanup, wsBaseUrl]);
 
     // Section navigation on the HOST site: /section path (SPA-unaware but works
     // for the common static/MPA case); "home" scrolls to top of /.
@@ -296,10 +322,12 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             const f = msg.args?.field, v = msg.args?.value;
             if (f && v !== undefined) setUserData((prev: any) => ({ ...prev, [f]: v }));
         } else if (msg.function === "confirmSave") {
+            const generation = connectionGeneration.current;
             setDataConfirmed(true);
             markLeadCaptured();
             setUserData((prev: any) => { if (prev) sendJSON({ type: "USER_DATA", data: prev }); return prev; });
             setTimeout(() => {
+                if (generation !== connectionGeneration.current) return;
                 setDataCollectionOpen(false);
                 setDataConfirmed(false);
                 sendJSON({ type: "POPUP_STATE", open: false });
@@ -321,9 +349,14 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             // Let the queued goodbye finish before tearing down: the player
             // worklet posts "drained" when its buffer empties.
             const node = playerNodeRef.current;
+            const generation = connectionGeneration.current;
             if (node) {
                 let done = false;
-                const finish = () => { if (!done) { done = true; cleanup(); } };
+                const finish = () => {
+                    if (done || generation !== connectionGeneration.current) return;
+                    done = true;
+                    cleanup();
+                };
                 node.port.addEventListener("message", (e: MessageEvent) => {
                     if (e.data === "drained") setTimeout(finish, 300);
                 });
@@ -333,7 +366,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                 cleanup();
             }
         } else if (msg.function === "appointmentBooked") {
-            console.log("[Tool] Appointment booked:", msg.args);
+            console.info("[VoiceWidget] Tool completed", { tool: "appointmentBooked" });
         } else if (msg.function === "staffAttendanceMarked") {
             setStaffAttendanceRevision(n => n + 1);
         } else if (msg.function === "requestStaffAttendance") {
@@ -374,6 +407,8 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
 
         accessRef.current = { ...accessRef.current, sessionDeadline: undefined };
         setAccess(accessRef.current);
+        const generation = ++connectionGeneration.current;
+        let url: string | undefined;
         try {
             // Audio contexts MUST be created (and resumed) inside the click
             // gesture — creating them later in ws.onopen leaves them suspended
@@ -384,8 +419,10 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             const playCtx = new AudioContext();
             playCtxRef.current = playCtx;
             await playCtx.resume().catch(() => {});
-            const url = workletUrl();
+            if (generation !== connectionGeneration.current) return;
+            url = workletUrl();
             await playCtx.audioWorklet.addModule(url);
+            if (generation !== connectionGeneration.current) return;
             const playerNode = new AudioWorkletNode(playCtx, "pcm-player");
             playerNodeRef.current = playerNode;
 
@@ -402,19 +439,36 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: { echoCancellation: true, noiseSuppression: true },
             });
+            if (generation !== connectionGeneration.current) {
+                stream.getTracks().forEach((track) => track.stop());
+                return;
+            }
             streamRef.current = stream;
 
             // Mic context at the browser's native rate; the worklet downsamples.
             const micCtx = new AudioContext();
             micCtxRef.current = micCtx;
             await micCtx.resume().catch(() => {});
+            if (generation !== connectionGeneration.current) return;
             await micCtx.audioWorklet.addModule(url);
-            URL.revokeObjectURL(url);
+            if (generation !== connectionGeneration.current) return;
 
             const base = wsBaseUrl || DEFAULT_WS_URL;
             const ws = new WebSocket(`${base}${base.includes("?") ? "&" : "?"}agent=${encodeURIComponent(agentId)}`);
             ws.binaryType = "arraybuffer";
             wsRef.current = ws;
+            lastAudioAt.current = performance.now();
+            idleTimer.current = window.setInterval(() => {
+                if (wsRef.current !== ws || performance.now() - lastAudioAt.current < IDLE_TIMEOUT_MS) return;
+                const connected = ws.readyState === WebSocket.OPEN;
+                setErrorCode(connected ? "IDLE_TIMEOUT" : "CONNECTION_FAILED");
+                setError(connected
+                    ? "The call ended after 30 seconds without speech."
+                    : "The voice service took too long to connect. Please try again.");
+                console.info("[VoiceWidget] Session closed", { reason: connected ? "idle_timeout" : "connect_timeout" });
+                cleanup();
+                void refreshAccess();
+            }, 1000);
 
             ws.onopen = () => {
                 const source = micCtx.createMediaStreamSource(stream);
@@ -427,6 +481,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                         return;
                     }
                     if (micMutedRef.current) return;
+                    lastAudioAt.current = performance.now();
                     ws.send(e.data);
                 };
                 source.connect(micNode);
@@ -438,7 +493,11 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             };
 
             ws.onmessage = async (event) => {
-                if (event.data instanceof ArrayBuffer) { playAudioChunk(event.data); return; }
+                if (event.data instanceof ArrayBuffer) {
+                    lastAudioAt.current = performance.now();
+                    playAudioChunk(event.data);
+                    return;
+                }
                 try {
                     const msg = JSON.parse(event.data);
                     if (msg.type === "SessionLimits") {
@@ -455,7 +514,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                     } else if (msg.type === "AgentAudioDone") {
                         setIsSpeaking(false);
                     } else if (msg.type === "Error") {
-                        console.error("Agent error:", msg);
+                        console.error("[VoiceWidget] Agent error", { code: msg.code || "AGENT_ERROR" });
                         setErrorCode(msg.code || "AGENT_ERROR");
                         if (msg.code === "IP_RATE_LIMIT") updateAccess({ ...msg, remaining: 0 });
                         setError(msg.description || "Agent error");
@@ -463,22 +522,33 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
                         setError(msg.description || "Please check your contact details");
                         setDataCollectionOpen(true);
                     }
-                } catch (e) {
-                    console.error("Error parsing agent message", e);
+                } catch {
+                    console.error("[VoiceWidget] Agent message could not be handled");
                 }
             };
 
-            ws.onclose = () => { cleanup(); void refreshAccess(); };
-            ws.onerror = () => { setErrorCode("CONNECTION_FAILED"); setError("Connection failed"); cleanup(); };
+            ws.onclose = (event) => {
+                console.info("[VoiceWidget] Connection closed", { code: event.code, clean: event.wasClean });
+                cleanup();
+                void refreshAccess();
+            };
+            ws.onerror = () => {
+                setErrorCode("CONNECTION_FAILED");
+                setError("Connection failed");
+                cleanup();
+                void refreshAccess();
+            };
         } catch (err: any) {
-            console.error("Sarvam connection error:", err);
+            if (generation !== connectionGeneration.current) return;
+            console.error("[VoiceWidget] Connection setup failed", { type: err?.name });
             setError(err?.message || "Failed to start conversation");
             cleanup();
+        } finally {
+            if (url) URL.revokeObjectURL(url);
         }
-    }, [isConnected, isConnecting]);
+    }, [isConnected, isConnecting, wsBaseUrl, cleanup, refreshAccess]);
 
     const stop = async () => {
-        sendJSON({ type: "stop" });
         cleanup();
     };
 
