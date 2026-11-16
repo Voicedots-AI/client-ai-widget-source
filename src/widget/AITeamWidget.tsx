@@ -63,7 +63,7 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
   const isWebVoice = pipeline === "gemini" || pipeline === "websocket" || pipeline === "sarvam";
   const access = studentConversation.access || DEFAULT_VOICE_ACCESS;
   const [now, setNow] = useState(Date.now());
-  const [timeLeft, setTimeLeft] = useState(isWebVoice ? 90 : 360);
+  const [timeLeft, setTimeLeft] = useState(isWebVoice ? DEFAULT_VOICE_ACCESS.sessionSeconds : 360);
   const [fallbackDeadline, setFallbackDeadline] = useState(0);
   const retrySeconds = Math.max(0, Math.ceil((access.retryAt - now) / 1000));
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
 
   // Use elapsed wall time so background tabs do not extend the countdown.
   useEffect(() => {
-    if (conversation.isConnected) setFallbackDeadline(Date.now() + (isWebVoice ? 90 : 360) * 1000);
+    if (conversation.isConnected) setFallbackDeadline(Date.now() + (isWebVoice ? DEFAULT_VOICE_ACCESS.sessionSeconds : 360) * 1000);
     else setFallbackDeadline(0);
   }, [conversation.isConnected, isWebVoice]);
   useEffect(() => {
