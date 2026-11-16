@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from 'preact/hooks';
 import AITeamWidget from './AITeamWidget';
+import { resolveWidgetAssets } from '../lib/assetUrls';
 // import '../styles/widget.css';
 import { PortalContext } from '../features/PortalContext';
 // import { SoftNavigation } from '../lib/navigation';
@@ -42,10 +43,10 @@ export default function WidgetRoot({ config }: { config: string }) {
 
   const parsedConfig = useMemo(() => {
     try {
-      return { ...JSON.parse(config), ...forcedConfig };
+      return resolveWidgetAssets({ ...JSON.parse(config), ...forcedConfig });
     } catch (e) {
       console.error("VoiceDots: JSON Parse Error", e);
-      return { avatars: [], ...forcedConfig };
+      return resolveWidgetAssets({ avatars: [], ...forcedConfig });
     }
   }, [config]);
 
