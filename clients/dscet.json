@@ -8,32 +8,55 @@
     "pipeline": "gemini",
     "agentId": "voicedots_agent_dscet9m2q1h8z5t6w3v0pajcylrbsfde",
     "themeColor": "#9966FE",
-    "logo": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/voicedotslogo.svg",
+    "logo": "https://voicedots.ai/voicedotslogo.svg",
     "avatars": [
       {
         "name": "about",
         "role": "About Us",
-        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/sales.lottie"
+        "avatar": "https://voicedots.ai/animations/sales.lottie"
       },
       {
         "name": "courses",
         "role": "Courses",
-        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/support.lottie"
+        "avatar": "https://voicedots.ai/animations/support.lottie"
       },
       {
         "name": "admission",
         "role": "Admissions",
-        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/ceo.lottie"
+        "avatar": "https://voicedots.ai/animations/ceo.lottie"
       },
       {
         "name": "placement",
         "role": "Placements",
-        "avatar": "https://cdn.jsdelivr.net/gh/Voicedots-AI-Deployment/animations@main/loan.lottie"
+        "avatar": "https://voicedots.ai/animations/loan.lottie"
       }
     ],
     "attendanceWorkspace": "348e9748-917d-421e-990f-c7f921f96df8"
   },
   "forceEmbed": {
-    "attendanceWorkspace": "348e9748-917d-421e-990f-c7f921f96df8"
+    "attendanceWorkspace": "348e9748-917d-421e-990f-c7f921f96df8",
+    "logo": "https://voicedots.ai/voicedotslogo.svg",
+    "avatars": [
+      {
+        "name": "about",
+        "role": "About Us",
+        "avatar": "https://voicedots.ai/animations/sales.lottie"
+      },
+      {
+        "name": "courses",
+        "role": "Courses",
+        "avatar": "https://voicedots.ai/animations/support.lottie"
+      },
+      {
+        "name": "admission",
+        "role": "Admissions",
+        "avatar": "https://voicedots.ai/animations/ceo.lottie"
+      },
+      {
+        "name": "placement",
+        "role": "Placements",
+        "avatar": "https://voicedots.ai/animations/loan.lottie"
+      }
+    ]
   }
 }
