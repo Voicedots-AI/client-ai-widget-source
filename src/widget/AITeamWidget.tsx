@@ -35,6 +35,14 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
     tag = "voicedots";
   }
   const studentConversation = conversation as any;
+  useEffect(() => {
+    if (conversation.error) {
+      console.error("[VoiceWidget] Voice request failed", {
+        code: studentConversation.errorCode || "VOICE_ERROR",
+        message: conversation.error,
+      });
+    }
+  }, [conversation.error, studentConversation.errorCode]);
   const [staffOpen, setStaffOpen] = useState(false);
   const [staffVoice, setStaffVoice] = useState(false);
   const openStaff = () => { autoCloseSpent.current = true; setStaffVoice(false); conversation.stop(); setStaffOpen(true); };
@@ -124,16 +132,6 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
   }, [retrySeconds]);
 
   const quotaExhausted = isWebVoice && retrySeconds > 0;
-  const [showQuotaNotice, setShowQuotaNotice] = useState(false);
-  useEffect(() => {
-    if (!quotaExhausted || conversation.isConnected || conversation.isConnecting || minimized) {
-      setShowQuotaNotice(false);
-      return;
-    }
-    setShowQuotaNotice(true);
-    const timer = window.setTimeout(() => setShowQuotaNotice(false), 10000);
-    return () => clearTimeout(timer);
-  }, [quotaExhausted, conversation.isConnected, conversation.isConnecting, minimized]);
 
   return (
     <div className={`vd-widget-container vd-pos-${pos}`}>
@@ -225,7 +223,6 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
             </div>
 
 
-            {conversation.error && studentConversation.errorCode !== "IP_RATE_LIMIT" && <p className="vd-access-error" role="alert">{conversation.error}</p>}
             <div className="vd-controls">
               {!conversation.isConnected ? (
                 <>
@@ -266,9 +263,6 @@ export default function AITeamWidget({ title, brandName, agentId, studentClient,
                 </>
               )}
             </div>
-            {showQuotaNotice && <p className="vd-quota-toast" role="status" aria-live="polite">
-              You have reached the connection limit for this hour. Try again in {formatClock(retrySeconds)}.
-            </p>}
           </div>
         </div>
       )}
