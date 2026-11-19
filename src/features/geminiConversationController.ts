@@ -94,6 +94,7 @@ class MicCapture extends AudioWorkletProcessor {
       let energy = 0;
       for (let i = 0; i < out.length; i++) { const v = out[i] / 32768; energy += v * v; }
       const active = Math.sqrt(energy / Math.max(1, out.length)) >= 0.004;
+      if (active) this.port.postMessage("user_voice_activity");
       if (!this.speaking) {
         this.preRoll.push(out);
         if (this.preRoll.length > 5) this.preRoll.shift();
@@ -164,7 +165,7 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
     const startingRef = useRef(false);
     const connectionGeneration = useRef(0);
     const idleTimer = useRef<number | undefined>(undefined);
-    const lastAudioAt = useRef(0);
+    const lastUserVoiceAt = useRef(0);
     const [activeAvatar, setActiveAvatar] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -457,9 +458,9 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             const ws = new WebSocket(`${base}${base.includes("?") ? "&" : "?"}agent=${encodeURIComponent(agentId)}`);
             ws.binaryType = "arraybuffer";
             wsRef.current = ws;
-            lastAudioAt.current = performance.now();
+            lastUserVoiceAt.current = performance.now();
             idleTimer.current = window.setInterval(() => {
-                if (wsRef.current !== ws || performance.now() - lastAudioAt.current < IDLE_TIMEOUT_MS) return;
+                if (wsRef.current !== ws || performance.now() - lastUserVoiceAt.current < IDLE_TIMEOUT_MS) return;
                 const connected = ws.readyState === WebSocket.OPEN;
                 setErrorCode(connected ? "IDLE_TIMEOUT" : "CONNECTION_FAILED");
                 setError(connected
@@ -471,17 +472,21 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
             }, 1000);
 
             ws.onopen = () => {
+                lastUserVoiceAt.current = performance.now();
                 const source = micCtx.createMediaStreamSource(stream);
                 const micNode = new AudioWorkletNode(micCtx, "mic-capture");
                 micNodeRef.current = micNode;
                 micNode.port.onmessage = (e) => {
                     if (ws.readyState !== WebSocket.OPEN) return;
+                    if (e.data === "user_voice_activity") {
+                        if (!micMutedRef.current) lastUserVoiceAt.current = performance.now();
+                        return;
+                    }
                     if (e.data === "audio_stream_end") {
                         ws.send(JSON.stringify({ type: "AUDIO_STREAM_END" }));
                         return;
                     }
                     if (micMutedRef.current) return;
-                    lastAudioAt.current = performance.now();
                     ws.send(e.data);
                 };
                 source.connect(micNode);
@@ -494,7 +499,6 @@ export function useGeminiConversationController(wsBaseUrl?: string) {
 
             ws.onmessage = async (event) => {
                 if (event.data instanceof ArrayBuffer) {
-                    lastAudioAt.current = performance.now();
                     playAudioChunk(event.data);
                     return;
                 }
